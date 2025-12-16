@@ -1,0 +1,2 @@
+Accessibility means designing systems so that people with disabilities can use them effectively.
+This includes providing text alternatives, clear navigation, and multiple modes of interaction.

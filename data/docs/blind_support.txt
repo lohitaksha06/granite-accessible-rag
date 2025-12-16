@@ -1,0 +1,2 @@
+Blind and low-vision users benefit from step-by-step verbal instructions.
+Information should avoid references like 'click here' and instead describe actions clearly.
