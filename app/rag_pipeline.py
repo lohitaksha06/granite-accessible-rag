@@ -28,3 +28,21 @@ class RAGPipeline:
         query_embedding = self.embedder.encode([query])
         distances, indices = self.index.search(query_embedding, k)
         return [self.documents[i] for i in indices[0]]
+
+
+def build_rag_prompt(context_docs, user_query):
+    context = "\n\n".join(context_docs)
+
+    return f"""
+You are an accessibility-focused AI assistant.
+Use ONLY the information in the context below.
+If the answer is not in the context, say "I don't know".
+
+Context:
+{context}
+
+Question:
+{user_query}
+
+Answer:
+"""
