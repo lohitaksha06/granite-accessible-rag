@@ -30,13 +30,22 @@ class RAGPipeline:
         return [self.documents[i] for i in indices[0]]
 
 
-def build_rag_prompt(context_docs, user_query):
+def build_rag_prompt(context_docs, user_query, disability=None, language=None):
     context = "\n\n".join(context_docs)
+
+    profile_instructions = ""
+    if disability:
+        profile_instructions += disability + "\n"
+    if language:
+        profile_instructions += language + "\n"
 
     return f"""
 You are an accessibility-focused AI assistant.
 Use ONLY the information in the context below.
 If the answer is not in the context, say "I don't know".
+
+Additional Instructions:
+{profile_instructions}
 
 Context:
 {context}

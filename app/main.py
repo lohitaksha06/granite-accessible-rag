@@ -7,19 +7,33 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag_pipeline import RAGPipeline, build_rag_prompt
 from app.granite_model import generate_response
+from app.profiles import DISABILITY_PROFILES, LANGUAGE_PROFILES
 
 
-def ask_question(query: str):
+def ask_question(query, disability="blind", language="english"):
     rag = RAGPipeline()
     rag.load_documents()
     rag.build_index()
 
     context_docs = rag.retrieve(query)
-    prompt = build_rag_prompt(context_docs, query)
+
+    disability_instruction = DISABILITY_PROFILES.get(disability, {}).get("instruction", "")
+    language_instruction = LANGUAGE_PROFILES.get(language, "")
+
+    prompt = build_rag_prompt(
+        context_docs,
+        query,
+        disability=disability_instruction,
+        language=language_instruction,
+    )
 
     return generate_response(prompt)
 
 
 if __name__ == "__main__":
-    answer = ask_question("How can blind users navigate systems?")
+    answer = ask_question(
+        "How can blind users navigate systems?",
+        disability="blind",
+        language="english",
+    )
     print(answer)

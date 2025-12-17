@@ -1,24 +1,26 @@
-"""Accessibility and language profile definitions for Granite Accessible RAG."""
+DISABILITY_PROFILES = {
+    "blind": {
+        "instruction": (
+            "Respond with clear, step-by-step verbal instructions. "
+            "Avoid visual references like 'click here' or 'see above'."
+        )
+    },
+    "deaf": {
+        "instruction": (
+            "Respond using clear, concise text. "
+            "Avoid audio-dependent explanations."
+        )
+    },
+    "cognitive": {
+        "instruction": (
+            "Use simple language. Break information into short steps. "
+            "Avoid technical jargon."
+        )
+    }
+}
 
-from dataclasses import dataclass
-from typing import Literal
-
-
-AccessibilityMode = Literal["deaf", "blind", "cognitive"]
-
-
-@dataclass(frozen=True)
-class UserProfile:
-    """Captures user accessibility and localization preferences."""
-
-    language: str
-    accessibility_mode: AccessibilityMode
-
-
-def get_default_profiles() -> list[UserProfile]:
-    """Seed a few baseline profiles for early testing."""
-    return [
-        UserProfile(language="en", accessibility_mode="deaf"),
-        UserProfile(language="en", accessibility_mode="blind"),
-        UserProfile(language="en", accessibility_mode="cognitive"),
-    ]
+LANGUAGE_PROFILES = {
+    "english": "Respond in English.",
+    "hindi": "Respond in simple Hindi.",
+    "spanish": "Respond in clear Spanish."
+}
