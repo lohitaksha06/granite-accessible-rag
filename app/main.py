@@ -1,39 +1,47 @@
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from fastapi import FastAPI
+from pydantic import BaseModel
 
 from app.rag_pipeline import RAGPipeline, build_rag_prompt
 from app.granite_model import generate_response
 from app.profiles import DISABILITY_PROFILES, LANGUAGE_PROFILES
 
 
-def ask_question(query, disability="blind", language="english"):
-    rag = RAGPipeline()
-    rag.load_documents()
-    rag.build_index()
+app = FastAPI(title="Granite Accessible RAG")
 
-    context_docs = rag.retrieve(query)
 
-    disability_instruction = DISABILITY_PROFILES.get(disability, {}).get("instruction", "")
-    language_instruction = LANGUAGE_PROFILES.get(language, "")
+class AskRequest(BaseModel):
+    query: str
+    disability: str = "blind"
+    language: str = "english"
+
+
+class AskResponse(BaseModel):
+    answer: str
+
+
+rag = RAGPipeline()
+rag.load_documents()
+rag.build_index()
+
+
+@app.post("/ask", response_model=AskResponse)
+def ask(request: AskRequest):
+    context_docs = rag.retrieve(request.query)
+
+    disability_instruction = DISABILITY_PROFILES.get(
+        request.disability, {}
+    ).get("instruction", "")
+
+    language_instruction = LANGUAGE_PROFILES.get(
+        request.language, ""
+    )
 
     prompt = build_rag_prompt(
         context_docs,
-        query,
+        request.query,
         disability=disability_instruction,
         language=language_instruction,
     )
 
-    return generate_response(prompt)
-
-
-if __name__ == "__main__":
-    answer = ask_question(
-        "How can blind users navigate systems?",
-        disability="blind",
-        language="english",
-    )
-    print(answer)
+    answer = generate_response(prompt)
+    return {"answer": answer}
