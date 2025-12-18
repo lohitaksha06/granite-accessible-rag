@@ -38,7 +38,35 @@ The system is designed with extensibility in mind for:
 
 ---
 
-## 🧠 How the System Works
+## 🧩 System Architecture
+
+User / Kiosk / Mobile App
+↓
+FastAPI Backend (/ask endpoint)
+↓
+Disability & Language Profile Resolver
+↓
+RAG Pipeline
+├── Vector Store (FAISS)
+├── Accessibility Knowledge Documents
+↓
+IBM Granite LLM
+↓
+Accessible, Grounded Response
+
+---
+
+## ⚙️ How It Works
+
+1. A user submits a question along with accessibility preferences such as disability type and language.
+2. The FastAPI backend receives the request through the `/ask` endpoint.
+3. The RAG pipeline retrieves relevant accessibility documents from a FAISS vector database.
+4. Retrieved content is injected into a structured prompt.
+5. Disability and language profiles shape how the AI should respond.
+6. IBM Granite LLM generates a grounded and accessibility-aware response using only the retrieved context.
+7. The response is returned to the user in an inclusive and understandable format.
+
+This design ensures accurate, explainable, and responsible AI behavior.
 
 ---
 
@@ -93,15 +121,31 @@ The system avoids hallucinations by retrieving verified accessibility and domain
 
 ---
 
-## 🌱 SDG Alignment
+## 🌱 Social Impact & SDG Alignment
 
-This project aligns with:
-- **SDG 4 – Quality Education**
-- **SDG 9 – Industry, Innovation, and Infrastructure**
-- **SDG 10 – Reduced Inequalities**
-- **SDG 11 – Sustainable Cities and Communities**
+This project aims to reduce communication barriers for people with disabilities by providing inclusive, AI-powered assistance.
 
-By focusing on inclusive digital access and responsible AI, the project follows ethical and accessibility-first design principles.
+Aligned UN Sustainable Development Goals:
+- **SDG 4 – Quality Education**: Accessible explanations for diverse learners
+- **SDG 9 – Industry, Innovation, and Infrastructure**: AI-driven public service systems
+- **SDG 10 – Reduced Inequalities**: Inclusive access to information
+- **SDG 11 – Sustainable Cities and Communities**: Accessible digital infrastructure
+
+Potential real-world applications include:
+- Bank and government service kiosks
+- Hospital and campus navigation assistants
+- Shopping malls and public service centers
+- Mobile accessibility applications
+
+---
+
+## 🔮 Future Extensions
+
+- Integration with sign language recognition systems for gesture-based input
+- Sign language avatar rendering for AI responses
+- Braille display and screen-reader integration
+- Expanded multilingual support with regional accessibility rules
+- Deployment on kiosks, edge devices, and mobile platforms
 
 ---
 
