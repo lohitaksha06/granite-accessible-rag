@@ -1,8 +1,13 @@
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
+import pickle
 
 DOCS_PATH = "data/docs"
+VECTORSTORE_PATH = "data/vectorstore"
+INDEX_FILE = os.path.join(VECTORSTORE_PATH, "index.faiss")
+DOCS_FILE = os.path.join(VECTORSTORE_PATH, "docs.pkl")
+
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 
@@ -24,6 +29,26 @@ class RAGPipeline:
         self.index = faiss.IndexFlatL2(dimension)
         self.index.add(embeddings)
 
+    def save_index(self):
+        os.makedirs(VECTORSTORE_PATH, exist_ok=True)
+        faiss.write_index(self.index, INDEX_FILE)
+        with open(DOCS_FILE, "wb") as f:
+            pickle.dump(self.documents, f)
+
+    def load_index(self):
+        if os.path.exists(INDEX_FILE) and os.path.exists(DOCS_FILE):
+            self.index = faiss.read_index(INDEX_FILE)
+            with open(DOCS_FILE, "rb") as f:
+                self.documents = pickle.load(f)
+            return True
+        return False
+
+    def initialize(self):
+        if not self.load_index():
+            self.load_documents()
+            self.build_index()
+            self.save_index()
+
     def retrieve(self, query: str, k: int = 2):
         query_embedding = self.embedder.encode([query])
         distances, indices = self.index.search(query_embedding, k)
@@ -33,11 +58,11 @@ class RAGPipeline:
 def build_rag_prompt(context_docs, user_query, disability=None, language=None):
     context = "\n\n".join(context_docs)
 
-    profile_instructions = ""
+    instructions = ""
     if disability:
-        profile_instructions += disability + "\n"
+        instructions += disability + "\n"
     if language:
-        profile_instructions += language + "\n"
+        instructions += language + "\n"
 
     return f"""
 You are an accessibility-focused AI assistant.
@@ -45,7 +70,7 @@ Use ONLY the information in the context below.
 If the answer is not in the context, say "I don't know".
 
 Additional Instructions:
-{profile_instructions}
+{instructions}
 
 Context:
 {context}

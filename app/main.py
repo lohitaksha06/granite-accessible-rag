@@ -20,8 +20,7 @@ class AskResponse(BaseModel):
 
 
 rag = RAGPipeline()
-rag.load_documents()
-rag.build_index()
+rag.initialize()
 
 
 @app.post("/ask", response_model=AskResponse)
