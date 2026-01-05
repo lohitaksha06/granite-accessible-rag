@@ -46,6 +46,9 @@ This creates an “accessibility intelligence layer” that can power kiosks, mo
 - Developers building inclusive digital/virtual platforms
 - Organizations aiming for accessibility compliance
 
+## Beyond Accessibility
+While designed for people with disabilities, the system also benefits shy users, elderly individuals, non-native speakers, and anyone who prefers self-service over human interaction.
+
 ## Responsible AI Considerations
 - **Grounded responses:** Uses RAG to reduce hallucinations.
 - **Transparency:** Instructs the model to reply “I don’t know” when context is missing.

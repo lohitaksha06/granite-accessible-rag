@@ -2,11 +2,13 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import os
 import pickle
+import json
 
 DOCS_PATH = "data/docs"
 VECTORSTORE_PATH = "data/vectorstore"
 INDEX_FILE = os.path.join(VECTORSTORE_PATH, "index.faiss")
 DOCS_FILE = os.path.join(VECTORSTORE_PATH, "docs.pkl")
+META_FILE = os.path.join(VECTORSTORE_PATH, "meta.json")
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
@@ -18,10 +20,23 @@ class RAGPipeline:
         self.index = None
 
     def load_documents(self):
-        for filename in os.listdir(DOCS_PATH):
+        for filename in sorted(os.listdir(DOCS_PATH)):
             if filename.endswith(".txt"):
                 with open(os.path.join(DOCS_PATH, filename), "r", encoding="utf-8") as f:
                     self.documents.append(f.read())
+
+    def _docs_fingerprint(self) -> dict:
+        files = []
+        for filename in sorted(os.listdir(DOCS_PATH)):
+            if not filename.endswith(".txt"):
+                continue
+            path = os.path.join(DOCS_PATH, filename)
+            try:
+                mtime = os.path.getmtime(path)
+            except OSError:
+                mtime = None
+            files.append({"name": filename, "mtime": mtime})
+        return {"docs_path": DOCS_PATH, "files": files}
 
     def build_index(self):
         embeddings = self.embedder.encode(self.documents)
@@ -36,11 +51,19 @@ class RAGPipeline:
             pickle.dump(self.documents, f)
 
     def load_index(self):
-        if os.path.exists(INDEX_FILE) and os.path.exists(DOCS_FILE):
+        if os.path.exists(INDEX_FILE) and os.path.exists(DOCS_FILE) and os.path.exists(META_FILE):
             self.index = faiss.read_index(INDEX_FILE)
             with open(DOCS_FILE, "rb") as f:
                 self.documents = pickle.load(f)
-            return True
+
+            try:
+                meta = json.loads(open(META_FILE, "r", encoding="utf-8").read())
+            except OSError:
+                return False
+            except json.JSONDecodeError:
+                return False
+
+            return meta == self._docs_fingerprint()
         return False
 
     def initialize(self):
@@ -48,6 +71,9 @@ class RAGPipeline:
             self.load_documents()
             self.build_index()
             self.save_index()
+            os.makedirs(VECTORSTORE_PATH, exist_ok=True)
+            with open(META_FILE, "w", encoding="utf-8") as f:
+                json.dump(self._docs_fingerprint(), f, ensure_ascii=False, indent=2)
 
     def retrieve(self, query: str, k: int = 2):
         query_embedding = self.embedder.encode([query])

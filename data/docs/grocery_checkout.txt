@@ -1,0 +1,12 @@
+Grocery checkout guidance (self-service or cashier)
+
+- Choose a checkout: cashier lane or self-checkout.
+- If self-checkout is available, scan each item barcode one at a time.
+- Place scanned items in the bagging area if required.
+- If an item does not scan, use the “Help” option or call an attendant.
+- For produce, use the lookup menu to select the item type.
+- When finished, confirm you have scanned all items.
+- Select a payment method: card, cash (if supported), or mobile payment.
+- Follow on-screen prompts to complete payment.
+- Collect your receipt if you need it.
+- Take your items and move to the packing area.

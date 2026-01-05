@@ -149,6 +149,12 @@ Potential real-world applications include:
 
 ---
 
+## 🌍 Beyond Accessibility
+
+While designed for people with disabilities, the system also benefits shy users, elderly individuals, non-native speakers, and anyone who prefers self-service over human interaction.
+
+---
+
 ## 🚀 Project Status
 
 - [x] Repository initialized

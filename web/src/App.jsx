@@ -10,7 +10,17 @@ const DISABILITY_OPTIONS = [
 const LANGUAGE_OPTIONS = [
   { value: 'english', label: 'English' },
   { value: 'hindi', label: 'Hindi' },
-  { value: 'spanish', label: 'Spanish' }
+  { value: 'spanish', label: 'Spanish' },
+  { value: 'french', label: 'French' },
+  { value: 'german', label: 'German' },
+  { value: 'portuguese', label: 'Portuguese' },
+  { value: 'arabic', label: 'Arabic' },
+  { value: 'russian', label: 'Russian' },
+  { value: 'mandarin', label: 'Mandarin Chinese' },
+  { value: 'bengali', label: 'Bengali' },
+  { value: 'urdu', label: 'Urdu' },
+  { value: 'japanese', label: 'Japanese' },
+  { value: 'korean', label: 'Korean' }
 ]
 
 export default function App() {
@@ -57,10 +67,24 @@ export default function App() {
   }
 
   return (
-    <main className="page">
+    <main className={`page mode-${disability}`}>
       <header className="header">
-        <h1 className="title">Virtual Kiosk</h1>
-        <p className="subtitle">Granite Accessible RAG</p>
+        <div className="headerRow">
+          <div>
+            <h1 className="title">Virtual Kiosk</h1>
+            <p className="subtitle">Granite Accessible RAG</p>
+          </div>
+          <div className="avatar" aria-hidden="true">
+            <svg viewBox="0 0 128 128" role="img">
+              <circle cx="64" cy="42" r="22" fill="#cbd5e1" />
+              <path
+                d="M20 118c6-26 26-42 44-42s38 16 44 42"
+                fill="#cbd5e1"
+              />
+              <circle cx="64" cy="64" r="58" fill="none" stroke="#e5e7eb" strokeWidth="4" />
+            </svg>
+          </div>
+        </div>
       </header>
 
       <form className="card" onSubmit={onSubmit}>
@@ -111,7 +135,18 @@ export default function App() {
       <section className="card" aria-live="polite" aria-busy={loading ? 'true' : 'false'}>
         <h2 className="panelTitle">Response</h2>
         {error ? <p className="error">{error}</p> : null}
-        {answer ? <pre className="answer">{answer}</pre> : <p className="hint">Your answer will appear here.</p>}
+        {answer ? (
+          <>
+            <pre className="answer">{answer}</pre>
+            {disability === 'blind' ? (
+              <pre className="braille" aria-label="Braille representation">
+                {toBraille(answer)}
+              </pre>
+            ) : null}
+          </>
+        ) : (
+          <p className="hint">Your answer will appear here.</p>
+        )}
       </section>
 
       <footer className="footer">
@@ -121,4 +156,23 @@ export default function App() {
       </footer>
     </main>
   )
+}
+
+function toBraille(text) {
+  const map = {
+    a: '⠁', b: '⠃', c: '⠉', d: '⠙', e: '⠑', f: '⠋', g: '⠛', h: '⠓', i: '⠊', j: '⠚',
+    k: '⠅', l: '⠇', m: '⠍', n: '⠝', o: '⠕', p: '⠏', q: '⠟', r: '⠗', s: '⠎', t: '⠞',
+    u: '⠥', v: '⠧', w: '⠺', x: '⠭', y: '⠽', z: '⠵',
+    ' ': ' ',
+    '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖', '-': '⠤', ':': '⠒', ';': '⠆',
+    '\n': '\n'
+  }
+
+  return String(text)
+    .split('')
+    .map((ch) => {
+      const lower = ch.toLowerCase()
+      return map[lower] ?? ch
+    })
+    .join('')
 }

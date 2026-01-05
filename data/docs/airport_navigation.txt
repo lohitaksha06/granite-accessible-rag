@@ -1,0 +1,12 @@
+Airport navigation assistance (general kiosk guidance)
+
+- After arriving, check the nearest display for your flight number and gate.
+- If you have not checked in, use the airline counter or self check-in kiosk.
+- Follow signs for “Security” to reach the screening area.
+- Keep your ID and boarding pass ready before the checkpoint.
+- At security, place metal items and electronics into trays if asked.
+- After security, check the displays again because gates can change.
+- Follow the concourse signs to your gate number.
+- If you need help, ask at an information desk or help point.
+- If you are lost, share your current landmark (shop name, restroom, gate number).
+- For accessibility services, request wheelchair or assistance at airline support.

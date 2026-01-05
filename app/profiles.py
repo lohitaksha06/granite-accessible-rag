@@ -22,5 +22,15 @@ DISABILITY_PROFILES = {
 LANGUAGE_PROFILES = {
     "english": "Respond in English.",
     "hindi": "Respond in simple Hindi.",
-    "spanish": "Respond in clear Spanish."
+    "spanish": "Respond in clear Spanish.",
+    "french": "Respond in clear French.",
+    "german": "Respond in clear German.",
+    "portuguese": "Respond in clear Portuguese.",
+    "arabic": "Respond in clear Arabic.",
+    "russian": "Respond in clear Russian.",
+    "mandarin": "Respond in simplified Mandarin Chinese.",
+    "bengali": "Respond in clear Bengali.",
+    "urdu": "Respond in clear Urdu.",
+    "japanese": "Respond in clear Japanese.",
+    "korean": "Respond in clear Korean."
 }

@@ -1,0 +1,29 @@
+{
+  "docs_path": "data/docs",
+  "files": [
+    {
+      "name": "accessibility_basics.txt",
+      "mtime": 1765903173.3123107
+    },
+    {
+      "name": "airport_navigation.txt",
+      "mtime": 1767630378.7055163
+    },
+    {
+      "name": "bank_account_help.txt",
+      "mtime": 1767630378.7966757
+    },
+    {
+      "name": "blind_support.txt",
+      "mtime": 1765903173.3123107
+    },
+    {
+      "name": "deaf_support.txt",
+      "mtime": 1765903173.3123107
+    },
+    {
+      "name": "grocery_checkout.txt",
+      "mtime": 1767630378.7669587
+    }
+  ]
+}
