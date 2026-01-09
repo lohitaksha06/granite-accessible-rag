@@ -2,6 +2,7 @@ fastapi
 uvicorn
 transformers
 torch
+accelerate
 sentence-transformers
 faiss-cpu
 python-dotenv
