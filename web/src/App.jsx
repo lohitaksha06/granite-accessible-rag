@@ -23,31 +23,35 @@ export default function App() {
   const canSubmit = query.trim().length > 0 && !loading
 
   async function askAssistant() {
+    // Reset UI state for a fresh request.
     setError('')
     setAnswer('')
     setLoading(true)
 
     try {
+      // Backend expects: { query, disability, language }
       const payload = {
         query: query.trim(),
         disability,
         language
       }
 
-      const resp = await fetch('http://127.0.0.1:8000/ask', {
+      // Use relative path so Vite proxy + CORS setup works.
+      const resp = await fetch('/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
       if (!resp.ok) {
-        throw new Error('Request failed. Please try again.')
+        throw new Error('Request failed')
       }
 
       const data = await resp.json()
+      // Display ONLY the "answer" field.
       setAnswer(String(data?.answer ?? ''))
     } catch {
-      setError('Sorry — I could not reach the assistant. Please check the backend and try again.')
+      setError('Sorry, the assistant is unavailable right now.')
     } finally {
       setLoading(false)
     }
@@ -112,12 +116,6 @@ export default function App() {
         {!loading && !error && !answer ? <p className="hint">Your answer will appear here.</p> : null}
         {answer ? <pre className="answer">{answer}</pre> : null}
       </section>
-
-      <footer className="footer">
-        <p>
-          Backend: <code>POST /ask</code> on <code>http://127.0.0.1:8000</code>
-        </p>
-      </footer>
     </main>
   )
 }

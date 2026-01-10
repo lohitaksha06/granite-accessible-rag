@@ -1,76 +1,78 @@
-# Granite Accessible RAG – Project Concept Note
+# Project Concept Note (1M1B – IBM SkillsBuild AI + Sustainability Virtual Internship)
+# Granite Accessible Assistant: An Inclusive AI Interface for Sustainable Cities and Public Services
 
-**Project Title:** Granite Accessible RAG: An AI Accessibility Assistant for Inclusive Digital, Physical, and Metaverse-Ready Services
+Student: Lohitaksha Patary
+College: Amrita Vishwa Vidyapeetham, Bangalore
+Email: bl.sc.u4cse24025@students.amrita.edu / patarylohitaksha06@gmail.com
+GitHub: https://github.com/lohitaksha06/granite-accessible-rag
 
-## SDG Alignment (UN Sustainable Development Goals)
-- **SDG 4 – Quality Education:** Provides simplified, accessible explanations; supports diverse learning needs.
-- **SDG 9 – Industry, Innovation, and Infrastructure:** Demonstrates scalable AI embedded into kiosks/apps/virtual systems using LLM + RAG.
-- **SDG 10 – Reduced Inequalities:** Reduces disability-driven communication barriers by adapting interaction style (disability + language).
-- **SDG 11 – Sustainable Cities and Communities:** Supports inclusive public services (banks, hospitals, malls, transport hubs, government offices).
+## Introduction & Project Context
+Modern cities rely on self-service systems: kiosks at airports and hospitals, digital counters at banks, ticketing machines, and online government forms. These systems improve efficiency, but often assume users can see small text, follow complex menus, hear announcements, and ask staff confidently.
+
+As a result, many people struggle to access essential services independently—especially people with disabilities (blind/low-vision, deaf/hard-of-hearing, cognitive/learning disabilities), elderly users, shy or socially anxious individuals, and non-native language speakers. In high-pressure places like airports, grocery stores, banks, hospitals, and government offices, the outcome is stress, longer queues, and dependence on staff.
+
+This project treats sustainability as both environmental and social: inclusive systems reduce friction and make public services equitable, dignified, and usable for everyone.
+
+## SDG Alignment
+- Primary: SDG 11 – Sustainable Cities and Communities: inclusive access to public services and urban infrastructure.
+- SDG 10 – Reduced Inequalities: reduces barriers based on disability, age, language, or confidence.
+- SDG 4 – Quality Education: provides clear, step-by-step guidance that supports different learning needs.
+- SDG 9 – Industry, Innovation, and Infrastructure: adds an accessibility layer to existing systems without full redesign.
 
 ## Problem Statement
-Many public and digital services still rely on complex kiosks, forms, signs, and staff interactions that assume users are visually and cognitively typical and comfortable asking for help. This creates real barriers for people who are blind, deaf/hard-of-hearing, or have cognitive/learning disabilities—but also for users who are anxious, shy, elderly, unfamiliar with technology, or uncomfortable with human interaction.
+How might we use AI to enable people of different abilities, languages, and confidence levels to independently access essential services in a sustainable and inclusive manner?
 
-In high-impact environments such as airports, grocery stores, banks, hospitals, universities, and government offices, these barriers become day-to-day problems:
-- **Airport:** A nervous traveler may not understand signage and may avoid asking staff (“Where do I go after security?”).
-- **Grocery store:** A shy customer may be unsure about payment options (“How do I pay here?”).
-- **Bank:** An elderly/anxious user may struggle with forms and fear making mistakes (needs calm, step-by-step guidance).
-
-At the same time, many AI assistants rely only on a large language model (LLM). In real-world service settings, hallucinated or unreliable answers can confuse users and reduce trust—especially in accessibility-critical contexts.
-
-There is a clear need for a responsible, accessibility-first AI assistant that:
-- Adapts communication style based on disability and language preferences
-- Provides calm, pressure-free guidance without judgment
-- Produces grounded, trustworthy responses suitable for public service use
-- Can be integrated behind kiosks, tablets, mobile apps, and virtual/metaverse-style interfaces
+Current gaps:
+- One-size-fits-all interfaces and instructions
+- Over-reliance on visual or spoken interaction
+- Limited personalization (language, simplified steps, calmer delivery)
+- Stress and dependency on staff for routine guidance
 
 ## AI Solution Overview
-**Granite Accessible RAG** combines **IBM Granite LLM** with **Retrieval-Augmented Generation (RAG)** to produce reliable, disability-aware answers.
+Granite Accessible Assistant is an AI-powered accessibility layer (not just a chatbot) that provides grounded, user-adaptive help for public services.
 
-**Key technical components**
-- IBM Granite LLM for natural language generation
-- RAG pipeline with **FAISS** vector search for grounded retrieval
-- Prompt shaping via **disability profiles** and **language profiles**
-- **FastAPI** backend exposing a clean `POST /ask` endpoint
+It uses IBM Granite models for language understanding and response generation, and Retrieval-Augmented Generation (RAG) to pull verified, pre-approved information before answering. Responses adapt to a user’s selected language and accessibility preference (for example: cognitive-friendly short steps, caption-first, or low-vision friendly structure).
 
-This creates an “accessibility intelligence layer” that can power kiosks, mobile apps, and metaverse-style interfaces without requiring VR hardware.
+This project does not train a new LLM; it responsibly applies existing models and retrieval of trusted content to improve reliability.
+
+## How the System Works (Short Workflow)
+- User interacts via kiosk/small screen/tablet/mobile and selects language + accessibility preference.
+- User asks for help (navigation, forms, procedures, service steps).
+- The system retrieves verified information from a curated knowledge base.
+- Granite generates a calm, simplified response grounded in that retrieved information.
+- Output is delivered in an accessible format to support independent action.
 
 ## Target Users
-**Primary users:**
-- Blind or low-vision individuals
-- Deaf or hard-of-hearing individuals
+Primary users:
+- Blind or low-vision users
+- Deaf or hard-of-hearing users
 - Users with cognitive or learning disabilities
 
-**Secondary users:**
-- Public service institutions (banks, hospitals, schools, government offices)
-- Developers building inclusive digital/virtual platforms
-- Organizations aiming for accessibility compliance
-
-## Beyond Accessibility
-While designed for people with disabilities, the system also benefits shy users, elderly individuals, non-native speakers, and anyone who prefers self-service over human interaction.
+Secondary users:
+- Elderly users
+- Shy or socially anxious users
+- Non-native language speakers
+- General public in high-pressure environments (airports, hospitals, banks)
 
 ## Responsible AI Considerations
-- **Grounded responses:** Uses RAG to reduce hallucinations.
-- **Transparency:** Instructs the model to reply “I don’t know” when context is missing.
-- **Inclusivity:** Response style adapts to disability and language preferences.
-- **Human-centered design:** Complements assistive tech (screen readers, captions, braille), not replacing human support.
-
-## Prototype / Demo (Any One)
-**Selected demo:** RAG demo with API interface
-- Accessibility knowledge stored as documents
-- FAISS-based semantic retrieval
-- Granite-based grounded response generation
-- FastAPI + Swagger UI (`/docs`) for interactive testing
+- Fairness: supports diverse needs via user-selected accessibility preferences.
+- Transparency: indicates AI-assisted guidance and uses safe fallback when verified info is missing.
+- Privacy: minimizes personal data; preferences can be used without identity details.
+- Safety: reduces hallucinations by grounding responses in retrieved, curated content.
 
 ## Expected Impact
-**Social impact:** Reduced communication barriers; increased independence in public and digital services.
+- Social: increased independence and dignity; reduced stress through calm, step-by-step guidance.
+- Urban: faster service flow and more consistent instructions; reduced repetitive staff workload.
+- Sustainability: scalable inclusive infrastructure that improves existing systems without major redesign.
 
-**Technical impact:** A reusable accessibility intelligence layer encouraging responsible AI adoption in sensitive domains.
+## Metaverse & Future Scope
+Here, “metaverse” means accessible virtual service interfaces (digital city-service spaces), not gaming and not VR-only.
 
-**Long-term impact:** Foundation for inclusive assistants in virtual/metaverse-like environments, supporting digital equity and inclusion.
+Future scope:
+- Virtual service agents for digital versions of city services
+- Sign-language avatars for key instructions
+- Braille/screen-reader optimized outputs
+- Gesture and voice interaction options with accessibility controls
 
-## Future Scope
-- Sign-language avatar rendering and gesture recognition input
-- Braille display and screen-reader integration
-- Expanded multilingual support with regional accessibility rules
-- Deployment on kiosks, edge devices, and mobile platforms
+## Conclusion
+Granite Accessible Assistant focuses on practical sustainability by improving inclusion in public services. By responsibly using IBM Granite with RAG-grounded verified information, the solution is feasible, scalable, and human-centric—helping citizens access services independently while reducing stress and staff overload.

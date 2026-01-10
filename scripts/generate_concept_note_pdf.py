@@ -11,7 +11,7 @@ def build_pdf(md_source_path: Path, pdf_out_path: Path) -> None:
     styles = getSampleStyleSheet()
     title_style = styles["Title"]
     body_style = styles["BodyText"]
-    body_style.leading = 13
+    body_style.leading = 12
 
     lines = md_source_path.read_text(encoding="utf-8").splitlines()
 
@@ -19,17 +19,17 @@ def build_pdf(md_source_path: Path, pdf_out_path: Path) -> None:
     for raw in lines:
         line = raw.strip()
         if not line:
-            story.append(Spacer(1, 8))
+            story.append(Spacer(1, 4))
             continue
 
         if line.startswith("# "):
             story.append(Paragraph(line[2:], title_style))
-            story.append(Spacer(1, 10))
+            story.append(Spacer(1, 6))
             continue
 
         if line.startswith("## "):
             story.append(Paragraph(f"<b>{line[3:]}</b>", styles["Heading2"]))
-            story.append(Spacer(1, 6))
+            story.append(Spacer(1, 4))
             continue
 
         if line.startswith("- "):
@@ -46,7 +46,7 @@ def build_pdf(md_source_path: Path, pdf_out_path: Path) -> None:
         rightMargin=54,
         topMargin=54,
         bottomMargin=54,
-        title="Granite Accessible RAG – Project Concept Note",
+        title="Granite Accessible Assistant – Project Concept Note",
     )
     doc.build(story)
 
