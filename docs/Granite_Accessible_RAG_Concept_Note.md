@@ -35,12 +35,100 @@ It uses IBM Granite models for language understanding and response generation, a
 
 This project does not train a new LLM; it responsibly applies existing models and retrieval of trusted content to improve reliability.
 
-## How the System Works (Short Workflow)
-- User interacts via kiosk/small screen/tablet/mobile and selects language + accessibility preference.
-- User asks for help (navigation, forms, procedures, service steps).
-- The system retrieves verified information from a curated knowledge base.
-- Granite generates a calm, simplified response grounded in that retrieved information.
-- Output is delivered in an accessible format to support independent action.
+## How the System Works (Detailed Architecture)
+
+### System Architecture Overview
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        USER INTERFACE LAYER                         │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐ │
+│  │  Kiosk   │  │  Mobile  │  │  Tablet  │  │  Web Browser (Vite)  │ │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘ │
+└───────┼─────────────┼─────────────┼───────────────────┼─────────────┘
+        │             │             │                   │
+        └─────────────┴─────────────┴───────────────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │   FastAPI Backend     │
+                    │   POST /ask endpoint  │
+                    └───────────┬───────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌───────────────┐    ┌─────────────────────┐    ┌──────────────┐
+│   Disability  │    │    RAG Pipeline     │    │   Language   │
+│    Profile    │    │  (Vector Search)    │    │   Profile    │
+│   Resolver    │    └─────────┬───────────┘    │   Resolver   │
+└───────┬───────┘              │                └──────┬───────┘
+        │           ┌──────────▼──────────┐            │
+        │           │   FAISS Vector DB   │            │
+        │           │ (Accessibility Docs)│            │
+        │           └──────────┬──────────┘            │
+        │                      │                       │
+        └──────────────────────┼───────────────────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   Prompt Builder    │
+                    │ (Context + Profile) │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  IBM Granite LLM    │
+                    │ (granite-4.0-micro) │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  Accessible Output  │
+                    │ (Text / Braille UI) │
+                    └─────────────────────┘
+```
+
+### Step-by-Step Workflow
+
+**Step 1: User Interaction**
+The user approaches a kiosk, opens the mobile app, or accesses the web interface. They select their preferred language (English, Hindi, Spanish, French, German, Arabic, Mandarin, etc.) and accessibility mode (Blind/Low-vision, Deaf/Hard-of-hearing, Cognitive-friendly, or None).
+
+**Step 2: Query Submission**
+The user types or speaks their question—for example: "How do I check in for my flight?" or "Where is the nearest ATM?" The query is sent via HTTP POST to the FastAPI backend's `/ask` endpoint along with the selected disability type and language preference.
+
+**Step 3: Profile Resolution**
+The backend resolves the user's accessibility profile into specific instructions:
+- **Blind/Low-vision**: "Provide step-by-step verbal instructions. Avoid visual-only references like colors or screen positions. Use clock-face directions (e.g., 'door at 3 o'clock')."
+- **Deaf/Hard-of-hearing**: "Provide text-based instructions. Avoid audio-only references. Use visual cues and written directions."
+- **Cognitive-friendly**: "Use simple, short sentences. Break tasks into small numbered steps. Avoid jargon and technical terms."
+
+**Step 4: Retrieval-Augmented Generation (RAG)**
+The RAG pipeline converts the user's query into a vector embedding using a SentenceTransformer model (all-MiniLM-L6-v2). This embedding is searched against a FAISS vector database containing pre-verified accessibility documents (airport navigation guides, bank procedures, grocery checkout steps, etc.). The top 2 most relevant document chunks are retrieved.
+
+**Step 5: Prompt Construction**
+The system builds a structured prompt that includes:
+- Grounding rules (use ONLY retrieved context, say "I don't know" if context is insufficient)
+- The user's disability-specific instructions
+- The user's language preference
+- Formatting requirements (short title, 3–6 numbered steps, short sentences)
+- The retrieved context documents
+- The user's original question
+
+**Step 6: LLM Response Generation**
+The constructed prompt is sent to IBM Granite LLM (granite-4.0-micro), which generates a calm, structured, accessibility-aware response grounded in the retrieved information. The model does not hallucinate or add outside facts—it answers strictly from the provided context.
+
+**Step 7: Output Delivery**
+The response is returned to the frontend and displayed in an accessible format:
+- Clear text with numbered steps
+- For blind users: optional Braille representation is shown alongside the text
+- The interface uses high-contrast colors, large fonts, and screen-reader-friendly HTML
+
+### Key Technical Components
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Frontend | React + Vite | Accessible kiosk-style UI |
+| Backend | FastAPI (Python) | RESTful API with CORS support |
+| Embeddings | SentenceTransformers | Convert text to vector embeddings |
+| Vector Store | FAISS | Fast similarity search for RAG |
+| LLM | IBM Granite 4.0 Micro | Grounded response generation |
+| Knowledge Base | Plain text documents | Verified accessibility information |
 
 ## Target Users
 Primary users:
@@ -68,11 +156,56 @@ Secondary users:
 ## Metaverse & Future Scope
 Here, “metaverse” means accessible virtual service interfaces (digital city-service spaces), not gaming and not VR-only.
 
-Future scope:
-- Virtual service agents for digital versions of city services
-- Sign-language avatars for key instructions
-- Braille/screen-reader optimized outputs
-- Gesture and voice interaction options with accessibility controls
+### Upcoming Features (Roadmap)
+
+**1. Customizable AI Avatars**
+Users will be able to select from a variety of AI avatars that represent them during interactions:
+- **Diverse representation**: Avatars of different genders, ethnicities, ages, and abilities
+- **Personalization**: Users can customize avatar appearance, clothing, and accessories
+- **Emotional expressions**: Avatars display appropriate emotions (calm, encouraging, attentive) to make interactions feel more human and supportive
+- **Accessibility indicators**: Optional visual indicators showing the user's accessibility preferences
+
+**2. Interactive Sign Language AI Bot**
+A revolutionary feature where the AI assistant responds with animated sign language:
+- **Regional sign language support**:
+  - American Sign Language (ASL) – United States, Canada
+  - British Sign Language (BSL) – United Kingdom
+  - Indian Sign Language (ISL) – India
+  - Japanese Sign Language (JSL/Nihon Shuwa) – Japan
+  - Chinese Sign Language (CSL) – China
+  - French Sign Language (LSF) – France, parts of Africa
+  - German Sign Language (DGS) – Germany, Austria
+  - Arabic Sign Language variants – Middle East, North Africa
+  - Brazilian Sign Language (Libras) – Brazil
+  - Korean Sign Language (KSL) – South Korea
+- **Real-time avatar signing**: The AI avatar performs sign language in sync with text responses
+- **Bidirectional communication**: Future integration with camera-based sign language recognition so deaf users can sign their questions
+- **Cultural adaptation**: Signs and gestures are culturally appropriate for each region
+
+**3. Voice & Gesture Interaction**
+- **Voice input**: Speak questions naturally; speech-to-text converts to queries
+- **Voice output**: Text-to-speech reads responses aloud for blind/low-vision users
+- **Gesture controls**: Simple hand gestures to navigate, confirm, or repeat instructions
+- **Eye-tracking support**: For users with motor disabilities, eye-gaze can control the interface
+
+**4. Multi-Modal Output Formats**
+- **Braille display integration**: Direct output to refreshable Braille displays
+- **Haptic feedback**: Vibration patterns on mobile devices for navigation cues
+- **Audio descriptions**: Detailed audio narration of visual elements
+- **Simplified visual mode**: High-contrast, large-text, icon-based interface for cognitive accessibility
+
+**5. Offline & Edge Deployment**
+- **Offline mode**: Core functionality works without internet using on-device models
+- **Edge kiosks**: Deploy to standalone kiosks in airports, hospitals, banks with local processing
+- **Low-bandwidth mode**: Compressed responses for areas with poor connectivity
+
+**6. Learning & Adaptation**
+- **User preference memory**: Remember returning users' language and accessibility choices
+- **Adaptive difficulty**: Automatically adjust explanation complexity based on user interactions
+- **Feedback loop**: Users can rate responses to improve future answers
+
+### Long-Term Vision
+The ultimate goal is a universal accessibility layer that can be deployed across any public service system worldwide—creating truly inclusive smart cities where no one is left behind due to disability, language, age, or social anxiety.
 
 ## Conclusion
 Granite Accessible Assistant focuses on practical sustainability by improving inclusion in public services. By responsibly using IBM Granite with RAG-grounded verified information, the solution is feasible, scalable, and human-centric—helping citizens access services independently while reducing stress and staff overload.
