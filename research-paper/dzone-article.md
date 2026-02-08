@@ -1,0 +1,373 @@
+# Building an Accessibility-First AI Assistant With IBM Granite and RAG
+
+**A hands-on guide to creating adaptive, disability-aware interfaces using retrieval-augmented generation**
+
+---
+
+## The Problem I Wanted to Solve
+
+Last year, I watched my grandmother struggle at a bank kiosk. The screen was cluttered, the text was small, and she couldn't hear the audio prompts clearly. An employee eventually helped her, but she looked embarrassed—like she'd done something wrong by needing assistance.
+
+That moment stuck with me.
+
+I started noticing these barriers everywhere: airport check-in machines with tiny fonts, grocery self-checkout screens that assume everyone can see color-coded buttons, hospital registration systems drowning in medical jargon. These interfaces work fine for most people, but they quietly exclude millions of others—people with visual impairments, hearing difficulties, cognitive disabilities, or simply those who aren't comfortable with technology.
+
+I'm a computer science student, so I asked myself: what if AI could bridge this gap? Not by replacing human help, but by providing an adaptive layer that meets users where they are.
+
+That question led me to build **Granite Accessible Assistant**—an open-source accessibility layer powered by IBM's Granite LLM and retrieval-augmented generation (RAG).
+
+---
+
+## What We're Building (And Why It Matters for Developers)
+
+This isn't just another chatbot. It's a context-aware AI assistant designed specifically for accessibility scenarios. The system:
+
+1. **Retrieves verified information** from a curated knowledge base (no hallucinations)
+2. **Adapts responses** based on disability profiles (blind, deaf, cognitive)
+3. **Supports 30+ languages** for inclusive global deployment
+4. **Runs locally** without sending personal data to external servers
+
+The tech stack includes Python, FastAPI, FAISS, SentenceTransformers, React, and IBM Granite 4.0 Micro. Everything is open-source and runs on modest hardware—no GPU cluster required.
+
+If you've been looking for a practical RAG implementation that solves a real problem, this is it.
+
+---
+
+## The Architecture: How It Actually Works
+
+Let me walk you through the system flow, then we'll dive into the code.
+
+```
+User Query + Preferences
+        │
+        ▼
+┌───────────────────┐
+│   FastAPI Server  │
+│   POST /ask       │
+└─────────┬─────────┘
+          │
+    ┌─────┴─────┐
+    ▼           ▼
+┌────────┐  ┌─────────────┐
+│Profile │  │    RAG      │
+│Resolver│  │  Pipeline   │
+└────┬───┘  └──────┬──────┘
+     │             │
+     │    ┌────────▼────────┐
+     │    │  FAISS Vector   │
+     │    │    Search       │
+     │    └────────┬────────┘
+     │             │
+     └──────┬──────┘
+            ▼
+    ┌───────────────┐
+    │ Prompt Builder│
+    │ (Context +    │
+    │  Instructions)│
+    └───────┬───────┘
+            ▼
+    ┌───────────────┐
+    │ IBM Granite   │
+    │ 4.0 Micro     │
+    └───────┬───────┘
+            ▼
+    Accessible Response
+```
+
+Here's what happens when a user asks "How do I check in for my flight?":
+
+**Step 1: Profile Resolution**
+
+The user selects their accessibility preferences upfront. For a blind user, the system loads this instruction:
+
+```python
+DISABILITY_PROFILES = {
+    "blind": {
+        "instruction": (
+            "Respond with clear, step-by-step verbal instructions. "
+            "Avoid visual references like 'click here' or 'see above'."
+        )
+    },
+    "deaf": {
+        "instruction": (
+            "Respond using clear, concise text. "
+            "Avoid audio-dependent explanations."
+        )
+    },
+    "cognitive": {
+        "instruction": (
+            "Use simple language. Break information into short steps. "
+            "Avoid technical jargon."
+        )
+    }
+}
+```
+
+This is intentionally simple. Complex disability taxonomies would slow down the interface and confuse users. Three clear options cover the majority of use cases.
+
+**Step 2: RAG Retrieval**
+
+The query gets converted into a vector embedding using SentenceTransformers (specifically `all-MiniLM-L6-v2`—small, fast, and good enough for semantic search). FAISS then finds the most relevant documents from the knowledge base.
+
+```python
+class RAGPipeline:
+    def __init__(self):
+        self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        self.documents = []
+        self.index = None
+
+    def retrieve(self, query: str, k: int = 2):
+        query_embedding = self.embedder.encode([query])
+        distances, indices = self.index.search(query_embedding, k)
+        return [self.documents[i] for i in indices[0]]
+```
+
+Why only retrieve 2 documents? Because more context doesn't always mean better answers. Too much context confuses the LLM and dilutes the response quality. For accessibility scenarios, precision beats volume.
+
+**Step 3: Prompt Construction**
+
+This is where the magic happens. The prompt combines:
+
+- Grounding rules (forcing the model to use only retrieved context)
+- Disability-specific instructions
+- Language preferences
+- Formatting requirements (numbered steps, short sentences)
+
+```python
+def build_rag_prompt(context_docs, user_query, disability=None, language=None):
+    grounding = (
+        "Grounding rules:\n"
+        "- Use ONLY the context below\n"
+        "- Do not add outside facts or assumptions\n"
+        "- If the context does not contain the answer, reply exactly: I don't know\n"
+    )
+    
+    formatting = (
+        "Format your response for accessibility and clarity:\n"
+        "- Start with a short title\n"
+        "- Then give 3–6 numbered steps (Step 1, Step 2, …)\n"
+        "- Keep sentences short; avoid dense paragraphs\n"
+    )
+    
+    return f"""
+You are an accessibility-focused AI assistant.
+{grounding}
+
+Additional Instructions:
+{disability}
+{language}
+
+{formatting}
+
+Context:
+{context}
+
+Question:
+{user_query}
+
+Answer:
+"""
+```
+
+The grounding rules are critical. Without them, the model might hallucinate helpful-sounding but incorrect information. The explicit "say I don't know" instruction prevents the model from guessing.
+
+**Step 4: Granite Response Generation**
+
+IBM Granite 4.0 Micro generates the final response. I chose this model because it's lightweight (runs on CPU), open-source, and handles instruction-following well.
+
+```python
+def generate_response(prompt: str, max_tokens: int = 200):
+    tokenizer, model = load_granite_model()
+    inputs = tokenizer(prompt, return_tensors="pt")
+    
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=max_tokens,
+    )
+    
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+```
+
+---
+
+## The Frontend: Accessible by Design
+
+The React frontend supports kiosk-style deployment. Here's what makes it accessibility-friendly:
+
+**High-contrast colors and large touch targets**: Users with low vision need clear visual boundaries. The interface uses bold colors and generous padding.
+
+**Minimal cognitive load**: No nested menus or hidden options. Language and accessibility preferences appear upfront with clear labels.
+
+**30+ language options**: The system supports English, Spanish, Mandarin, Hindi, Arabic, French, German, Japanese, Korean, Bengali, Urdu, and many more. Language selection combines with disability profiles—a Hindi-speaking user with cognitive needs gets simple Hindi responses.
+
+```jsx
+const DISABILITY_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'blind', label: 'Blind / Low-vision' },
+  { value: 'deaf', label: 'Deaf / Hard-of-hearing' },
+  { value: 'cognitive', label: 'Cognitive-friendly' }
+]
+
+const LANGUAGE_OPTIONS = [
+  { value: 'english', label: '🇬🇧 English' },
+  { value: 'spanish', label: '🇪🇸 Spanish (Español)' },
+  { value: 'mandarin', label: '🇨🇳 Mandarin (中文)' },
+  { value: 'hindi', label: '🇮🇳 Hindi (हिन्दी)' },
+  // ... 26 more languages
+]
+```
+
+---
+
+## Why RAG Instead of Fine-Tuning?
+
+You might wonder: why not just fine-tune a model on accessibility data?
+
+Three reasons:
+
+1. **Control**: With RAG, I know exactly what information the model draws from. If something's wrong, I update the knowledge base—no retraining required.
+
+2. **Auditability**: Every response can be traced back to specific documents. This matters for public-facing systems where accountability matters.
+
+3. **Resource efficiency**: Fine-tuning requires GPUs, datasets, and expertise. RAG works with a handful of text files and runs on a laptop.
+
+The knowledge base is intentionally simple—plain text files with verified information:
+
+```
+Airport navigation assistance (general kiosk guidance)
+
+- After arriving, check the nearest display for your flight number and gate.
+- If you have not checked in, use the airline counter or self check-in kiosk.
+- Follow signs for "Security" to reach the screening area.
+- Keep your ID and boarding pass ready before the checkpoint.
+...
+```
+
+Anyone can read, edit, or add to these files. No machine learning expertise required.
+
+---
+
+## Running It Yourself
+
+**Prerequisites**:
+- Python 3.9+
+- Node.js 18+ (for the frontend)
+- 8GB RAM minimum
+
+**Backend setup**:
+
+```bash
+# Clone the repository
+git clone https://github.com/lohitaksha06/granite-accessible-rag.git
+cd granite-accessible-rag
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the FastAPI server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The first run downloads the Granite model (~500MB) and builds the FAISS index. Subsequent starts are faster.
+
+**Frontend setup**:
+
+```bash
+cd web
+pnpm install  # or npm install
+pnpm dev      # starts on localhost:5173
+```
+
+**Testing the API directly**:
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "How do I check in for my flight?",
+    "disability": "blind",
+    "language": "english"
+  }'
+```
+
+---
+
+## Real-World Use Cases
+
+This system could deploy in several contexts:
+
+**Airport kiosks**: Help travelers with disabilities navigate check-in, security, and boarding independently. The system provides step-by-step verbal instructions for blind users or simplified text for those with cognitive needs.
+
+**Bank branches**: Assist customers with account tasks. Instead of waiting for staff, users get personalized guidance adapted to their communication needs.
+
+**Hospital registration**: Medical environments are stressful. An accessibility-aware assistant reduces friction for patients who struggle with standard interfaces.
+
+**Grocery self-checkout**: Guide users through payment and bagging with clear, non-visual instructions.
+
+**Government services**: Public forms and processes explained in simple, multilingual formats.
+
+---
+
+## Lessons Learned
+
+**Keep disability profiles simple**: Early versions had 10+ disability options. Users got overwhelmed. Three clear categories work better than exhaustive taxonomies.
+
+**Grounding rules prevent hallucinations**: Without explicit "use only this context" instructions, the model adds plausible-sounding but incorrect details. Be aggressive about grounding.
+
+**Test with real accessibility needs**: I consulted with users who have visual and cognitive impairments. Their feedback changed everything—from font sizes to response length.
+
+**Local models matter**: Privacy concerns are real, especially for disability-related interactions. Running Granite locally means no data leaves the device.
+
+---
+
+## Extending the System
+
+The architecture supports several extensions:
+
+**Sign language avatars**: The frontend includes a customizable avatar component. With integration to sign language animation libraries, responses could render as ASL or ISL.
+
+**Voice input/output**: Connect to speech-to-text and text-to-speech APIs for hands-free interaction.
+
+**Braille display support**: Output formatting already uses structured text that maps well to Braille displays.
+
+**Additional knowledge domains**: Drop new `.txt` files into the `data/docs` folder, restart the server, and the RAG pipeline indexes them automatically.
+
+---
+
+## The Tech Stack at a Glance
+
+| Component | Technology | Why This Choice |
+|-----------|------------|-----------------|
+| Backend | FastAPI | Async-ready, automatic OpenAPI docs, easy to deploy |
+| LLM | IBM Granite 4.0 Micro | Open-source, runs on CPU, good instruction-following |
+| Embeddings | SentenceTransformers (all-MiniLM-L6-v2) | Small footprint, fast inference, decent quality |
+| Vector Store | FAISS | Industry-standard, efficient similarity search |
+| Frontend | React + Vite | Fast development, good accessibility tooling |
+| Knowledge Base | Plain text files | Human-readable, easy to audit and update |
+
+Total dependencies: 10 Python packages. No external API keys required for core functionality.
+
+---
+
+## What's Next
+
+I'm working on:
+
+1. **Benchmark dataset**: Standardized tests for accessibility-aware AI responses
+2. **Multi-modal input**: Image-based queries for users who can't type easily
+3. **Deployment guides**: Docker containers and Kubernetes configs for production use
+4. **Community knowledge base**: Crowdsourced accessibility information for more domains
+
+---
+
+## Try It Yourself
+
+The complete code is available on GitHub: [github.com/lohitaksha06/granite-accessible-rag](https://github.com/lohitaksha06/granite-accessible-rag)
+
+Star the repo if you find it useful. Pull requests welcome—especially for new language profiles, knowledge documents, or accessibility improvements.
+
+If you're building public-facing interfaces, consider: who gets left out by your current design? Sometimes the most impactful code isn't the most complex. It's the code that helps one more person use your system independently.
+
+---
+
+**About the Author**: Lohitaksha Patary is a computer science student at Amrita Vishwa Vidyapeetham, Bangalore, interested in accessible AI systems and inclusive technology design. Reach out at patarylohitaksha06@gmail.com.
