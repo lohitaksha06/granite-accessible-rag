@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import Avatar from './Avatar'
 import CustomizePage from './CustomizePage'
+import StarBackground from './StarBackground'
+import './styles.css'
 
 const DISABILITY_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -10,7 +12,6 @@ const DISABILITY_OPTIONS = [
 ]
 
 const LANGUAGE_OPTIONS = [
-  // Major world languages
   { value: 'english', label: '🇬🇧 English' },
   { value: 'spanish', label: '🇪🇸 Spanish (Español)' },
   { value: 'mandarin', label: '🇨🇳 Mandarin (中文)' },
@@ -22,7 +23,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'russian', label: '🇷🇺 Russian (Русский)' },
   { value: 'japanese', label: '🇯🇵 Japanese (日本語)' },
   { value: 'korean', label: '🇰🇷 Korean (한국어)' },
-  // Additional languages
   { value: 'bengali', label: '🇧🇩 Bengali (বাংলা)' },
   { value: 'urdu', label: '🇵🇰 Urdu (اردو)' },
   { value: 'indonesian', label: '🇮🇩 Indonesian' },
@@ -50,52 +50,28 @@ const DEFAULT_CUSTOMIZATION = {
   hairStyle: 'short',
   eyeColor: '#3d2314',
   shirtColor: '#4a90d9',
-  mood: 'neutral'
+  mood: 'neutral',
+  gender: 'neutral'
 }
 
-// Detect greetings and farewells in multiple languages
+// Detect greetings in multiple languages
 function detectGesture(text) {
   const lower = text.toLowerCase()
   
   const helloWords = [
     'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
-    'hola', 'buenos días', 'buenas tardes',
-    'bonjour', 'salut', 'bonsoir',
-    'hallo', 'guten tag', 'guten morgen',
-    'ciao', 'buongiorno',
-    'olá', 'oi', 'bom dia',
-    'привет', 'здравствуйте', 'доброе утро',
-    'こんにちは', 'おはよう',
-    '你好', '早上好',
-    '안녕하세요', '안녕',
-    'مرحبا', 'السلام عليكم',
-    'नमस्ते', 'नमस्कार',
-    'xin chào',
-    'สวัสดี',
-    'hej', 'hei',
-    'cześć', 'dzień dobry'
+    'hola', 'bonjour', 'hallo', 'ciao', 'olá', 'привет', 'こんにちは', '你好', '안녕하세요',
+    'مرحبا', 'नमस्ते', 'xin chào', 'สวัสดี', 'cześć'
   ]
   
   const goodbyeWords = [
-    'goodbye', 'bye', 'see you', 'farewell', 'take care', 'later',
-    'adiós', 'hasta luego', 'chao',
-    'au revoir', 'à bientôt', 'salut',
-    'auf wiedersehen', 'tschüss',
-    'arrivederci', 'ciao',
-    'tchau', 'adeus',
-    'до свидания', 'пока',
-    'さようなら', 'じゃね',
-    '再见', '拜拜',
-    '안녕히 가세요', '잘가',
-    'مع السلامة', 'وداعا',
-    'अलविदा', 'फिर मिलेंगे',
-    'tạm biệt',
-    'ลาก่อน',
-    'do widzenia', 'pa'
+    'goodbye', 'bye', 'see you', 'farewell', 'take care',
+    'adiós', 'au revoir', 'auf wiedersehen', 'arrivederci', 'tchau',
+    'до свидания', 'さようなら', '再见', '안녕히', 'مع السلامة', 'अलविदा'
   ]
   
   const thankWords = [
-    'thank', 'thanks', 'gracias', 'merci', 'danke', 'grazie', 'obrigado', 
+    'thank', 'thanks', 'gracias', 'merci', 'danke', 'grazie', 'obrigado',
     'спасибо', 'ありがとう', '谢谢', '감사합니다', 'شكرا', 'धन्यवाद'
   ]
   
@@ -106,7 +82,107 @@ function detectGesture(text) {
   return null
 }
 
-function KioskPage({ customization, onCustomize }) {
+// Navigation Component
+function Navigation({ currentPage, setCurrentPage }) {
+  return (
+    <nav className="navigation">
+      <div className="nav-brand">
+        <span className="nav-logo">✨</span>
+        <span className="nav-title">Granite AI</span>
+      </div>
+      <div className="nav-links">
+        <button 
+          className={`nav-link ${currentPage === 'home' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('home')}
+        >
+          Home
+        </button>
+        <button 
+          className={`nav-link ${currentPage === 'chat' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('chat')}
+        >
+          Chat
+        </button>
+        <button 
+          className={`nav-link ${currentPage === 'customize' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('customize')}
+        >
+          Avatar
+        </button>
+      </div>
+    </nav>
+  )
+}
+
+// Home Page
+function HomePage({ onGetStarted }) {
+  return (
+    <div className="home-page">
+      <div className="hero-section">
+        <div className="hero-content">
+          <h1 className="hero-title">
+            Welcome to<br />
+            <span className="highlight">Granite Accessible Assistant</span>
+          </h1>
+          <p className="hero-subtitle">
+            An AI-powered accessibility layer that adapts to your needs.
+            Built with IBM Granite LLM and RAG technology for grounded,
+            reliable responses in 30+ languages.
+          </p>
+          <div className="hero-features">
+            <div className="feature">
+              <span className="feature-icon">🎯</span>
+              <span>Accessibility First</span>
+            </div>
+            <div className="feature">
+              <span className="feature-icon">🌍</span>
+              <span>30+ Languages</span>
+            </div>
+            <div className="feature">
+              <span className="feature-icon">🔒</span>
+              <span>Privacy Focused</span>
+            </div>
+          </div>
+          <button className="get-started-btn" onClick={onGetStarted}>
+            Get Started
+            <span className="btn-arrow">→</span>
+          </button>
+        </div>
+        <div className="hero-visual">
+          <div className="floating-avatar">
+            <Avatar 
+              customization={DEFAULT_CUSTOMIZATION}
+              gesture="hello"
+              mood="happy"
+              size="large"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="info-cards">
+        <div className="info-card glass-card">
+          <div className="card-icon">👁️</div>
+          <h3>Blind / Low Vision</h3>
+          <p>Step-by-step verbal instructions without visual references</p>
+        </div>
+        <div className="info-card glass-card">
+          <div className="card-icon">👂</div>
+          <h3>Deaf / Hard of Hearing</h3>
+          <p>Clear text-based responses without audio dependencies</p>
+        </div>
+        <div className="info-card glass-card">
+          <div className="card-icon">🧠</div>
+          <h3>Cognitive Friendly</h3>
+          <p>Simple language with short steps and no jargon</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Chat Page
+function ChatPage({ customization }) {
   const [disability, setDisability] = useState('none')
   const [language, setLanguage] = useState('english')
   const [query, setQuery] = useState('')
@@ -116,7 +192,7 @@ function KioskPage({ customization, onCustomize }) {
   const [gesture, setGesture] = useState('idle')
   const [mood, setMood] = useState(customization.mood || 'neutral')
 
-  // React to typing
+  // React to states
   useEffect(() => {
     if (loading) {
       setGesture('thinking')
@@ -124,16 +200,14 @@ function KioskPage({ customization, onCustomize }) {
     } else if (answer) {
       setGesture('thumbsup')
       setMood('happy')
-      const timer = setTimeout(() => {
-        setGesture('idle')
-      }, 2000)
+      const timer = setTimeout(() => setGesture('idle'), 2000)
       return () => clearTimeout(timer)
     } else if (error) {
       setMood('sad')
     }
   }, [loading, answer, error])
 
-  // Detect gesture from query text
+  // Detect gesture from query
   useEffect(() => {
     if (query && !loading) {
       const detected = detectGesture(query)
@@ -156,21 +230,13 @@ function KioskPage({ customization, onCustomize }) {
     setMood('thinking')
 
     try {
-      const payload = {
-        query: query.trim(),
-        disability,
-        language
-      }
-
       const resp = await fetch('/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ query: query.trim(), disability, language })
       })
 
-      if (!resp.ok) {
-        throw new Error('Request failed')
-      }
+      if (!resp.ok) throw new Error('Request failed')
 
       const data = await resp.json()
       setAnswer(String(data?.answer ?? ''))
@@ -186,128 +252,119 @@ function KioskPage({ customization, onCustomize }) {
   }
 
   return (
-    <main className="page kiosk-page">
-      <header className="header">
-        <div className="header-content">
-          <div>
-            <h1 className="title">Virtual Kiosk</h1>
-            <p className="subtitle">Granite Accessible RAG Assistant</p>
-          </div>
-          <button className="customize-btn" onClick={onCustomize}>
-            ⚙️ Customize Avatar
-          </button>
-        </div>
-      </header>
-
-      <div className="kiosk-layout">
-        {/* Avatar Panel */}
-        <section className="card avatar-panel">
-          <div className="avatar-container">
+    <div className="chat-page">
+      <div className="chat-container">
+        {/* Avatar Section - Big and Central */}
+        <div className="avatar-section">
+          <div className="avatar-wrapper glass-card">
             <Avatar 
               customization={customization} 
               gesture={gesture} 
-              mood={mood} 
+              mood={mood}
+              size="large"
             />
+            <div className="avatar-status">
+              {loading && <span className="status thinking">🤔 Thinking...</span>}
+              {!loading && answer && <span className="status ready">✨ Here's your answer!</span>}
+              {!loading && !answer && !error && <span className="status idle">👋 Ask me anything!</span>}
+              {error && <span className="status error">😔 Something went wrong</span>}
+            </div>
           </div>
-          <div className="avatar-status">
-            {loading && <span className="status thinking">🤔 Thinking...</span>}
-            {!loading && answer && <span className="status ready">✨ Here's your answer!</span>}
-            {!loading && !answer && !error && <span className="status idle">👋 Ask me anything!</span>}
-            {error && <span className="status error">😔 Something went wrong</span>}
-          </div>
-        </section>
+        </div>
 
-        {/* Interaction Panel */}
-        <div className="interaction-panel">
-          <section className="card" aria-label="Ask the assistant">
-            <div className="grid">
-              <div className="field">
-                <label htmlFor="disability">Accessibility Mode</label>
-                <select
-                  id="disability"
-                  value={disability}
-                  onChange={(e) => setDisability(e.target.value)}
-                >
-                  {DISABILITY_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label htmlFor="language">Language</label>
-                <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                  {LANGUAGE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {/* Chat Interface */}
+        <div className="chat-interface">
+          <div className="controls-row">
+            <div className="control-group">
+              <label htmlFor="disability">Accessibility Mode</label>
+              <select
+                id="disability"
+                value={disability}
+                onChange={(e) => setDisability(e.target.value)}
+              >
+                {DISABILITY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </div>
 
-            <div className="field">
-              <label htmlFor="query">How can I help you today?</label>
-              <textarea
-                id="query"
-                rows={4}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Type your question here... (Try saying 'Hello!' or 'Thank you!')"
-              />
+            <div className="control-group">
+              <label htmlFor="language">Language</label>
+              <select 
+                id="language" 
+                value={language} 
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {LANGUAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </div>
+          </div>
 
-            <button className="button" type="button" onClick={askAssistant} disabled={!canSubmit}>
+          <div className="query-section glass-card">
+            <label htmlFor="query">How can I help you today?</label>
+            <textarea
+              id="query"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Type your question here... (Try saying 'Hello!' or 'Thank you!')"
+              rows={3}
+            />
+            <button 
+              className="submit-btn" 
+              onClick={askAssistant} 
+              disabled={!canSubmit}
+            >
               {loading ? '🔄 Processing...' : '💬 Ask Assistant'}
             </button>
-          </section>
+          </div>
 
-          <section className="card response-card" aria-live="polite" aria-busy={loading ? 'true' : 'false'}>
-            <h2 className="panelTitle">Assistant Response</h2>
-            {loading ? <p className="hint">The assistant is thinking...</p> : null}
-            {error ? <p className="error">{error}</p> : null}
-            {!loading && !error && !answer ? <p className="hint">Your answer will appear here.</p> : null}
-            {answer ? <pre className="answer">{answer}</pre> : null}
-          </section>
+          {/* Response Section */}
+          <div className="response-section glass-card" aria-live="polite">
+            <h3>Assistant Response</h3>
+            {loading && <p className="hint">The assistant is thinking...</p>}
+            {error && <p className="error-text">{error}</p>}
+            {!loading && !error && !answer && <p className="hint">Your answer will appear here.</p>}
+            {answer && <pre className="answer-text">{answer}</pre>}
+          </div>
         </div>
       </div>
-
-      <footer className="footer">
-        <p>Powered by IBM Granite LLM • Supports {LANGUAGE_OPTIONS.length} languages</p>
-      </footer>
-    </main>
+    </div>
   )
 }
 
+// Main App
 export default function App() {
-  const [page, setPage] = useState('kiosk')
+  const [page, setPage] = useState('home')
   const [customization, setCustomization] = useState(() => {
-    // Load from localStorage if available
     const saved = localStorage.getItem('avatarCustomization')
     return saved ? JSON.parse(saved) : DEFAULT_CUSTOMIZATION
   })
 
-  // Save customization to localStorage
   useEffect(() => {
     localStorage.setItem('avatarCustomization', JSON.stringify(customization))
   }, [customization])
 
-  if (page === 'customize') {
-    return (
-      <CustomizePage 
-        customization={customization}
-        setCustomization={setCustomization}
-        onBack={() => setPage('kiosk')}
-      />
-    )
-  }
-
   return (
-    <KioskPage 
-      customization={customization}
-      onCustomize={() => setPage('customize')}
-    />
+    <div className="app">
+      <StarBackground />
+      <Navigation currentPage={page} setCurrentPage={setPage} />
+      
+      <main className="main-content">
+        {page === 'home' && <HomePage onGetStarted={() => setPage('chat')} />}
+        {page === 'chat' && <ChatPage customization={customization} />}
+        {page === 'customize' && (
+          <CustomizePage 
+            customization={customization}
+            setCustomization={setCustomization}
+          />
+        )}
+      </main>
+
+      <footer className="footer">
+        <p>Powered by IBM Granite LLM • {LANGUAGE_OPTIONS.length} Languages • Open Source</p>
+      </footer>
+    </div>
   )
 }

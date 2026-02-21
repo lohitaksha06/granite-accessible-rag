@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Avatar from './Avatar'
 
 const SKIN_TONES = [
@@ -54,6 +54,12 @@ const SHIRT_COLORS = [
   { value: '#ffffff', label: 'White' }
 ]
 
+const GENDERS = [
+  { value: 'neutral', label: '🧑 Neutral' },
+  { value: 'male', label: '👨 Male' },
+  { value: 'female', label: '👩 Female' }
+]
+
 const MOODS = [
   { value: 'neutral', label: '😐 Neutral' },
   { value: 'happy', label: '😊 Happy' },
@@ -62,155 +68,172 @@ const MOODS = [
   { value: 'thinking', label: '🤔 Thinking' }
 ]
 
-export default function CustomizePage({ customization, setCustomization, onBack }) {
+export default function CustomizePage({ customization, setCustomization }) {
+  const [previewGesture, setPreviewGesture] = useState('idle')
+  
   const updateField = (field, value) => {
     setCustomization(prev => ({ ...prev, [field]: value }))
   }
 
+  const triggerGesture = (gesture) => {
+    setPreviewGesture(gesture)
+    setTimeout(() => setPreviewGesture('idle'), 2000)
+  }
+
   return (
-    <main className="page customize-page">
-      <header className="header">
-        <button className="back-button" onClick={onBack}>
-          ← Back to Kiosk
-        </button>
-        <h1 className="title">Customize Your Avatar</h1>
-        <p className="subtitle">Create your personal assistant companion</p>
-      </header>
+    <div className="customize-page">
+      <div className="customize-container">
+        <div className="customize-header">
+          <h1>Customize Your Avatar</h1>
+          <p>Create your personal AI assistant companion</p>
+        </div>
 
-      <div className="customize-layout">
-        {/* Preview */}
-        <section className="card preview-card">
-          <h2 className="panelTitle">Preview</h2>
-          <div className="avatar-preview">
-            <Avatar 
-              customization={customization} 
-              gesture="idle" 
-              mood={customization.mood || 'neutral'} 
-            />
-          </div>
-          <div className="preview-actions">
-            <button 
-              className="gesture-btn" 
-              onClick={() => {
-                const avatar = document.querySelector('.avatar-preview')
-                avatar.dataset.gesture = 'hello'
-                setTimeout(() => avatar.dataset.gesture = '', 2000)
-              }}
-            >
-              👋 Wave Hello
-            </button>
-            <button 
-              className="gesture-btn"
-              onClick={() => {
-                const avatar = document.querySelector('.avatar-preview')
-                avatar.dataset.gesture = 'thumbsup'
-                setTimeout(() => avatar.dataset.gesture = '', 1500)
-              }}
-            >
-              👍 Thumbs Up
-            </button>
-          </div>
-        </section>
-
-        {/* Options */}
-        <section className="card options-card">
-          <h2 className="panelTitle">Appearance</h2>
-          
-          <div className="option-group">
-            <label>Skin Tone</label>
-            <div className="color-picker">
-              {SKIN_TONES.map(tone => (
-                <button
-                  key={tone.value}
-                  className={`color-swatch ${customization.skinTone === tone.value ? 'selected' : ''}`}
-                  style={{ backgroundColor: tone.value }}
-                  onClick={() => updateField('skinTone', tone.value)}
-                  title={tone.label}
-                  aria-label={tone.label}
-                />
-              ))}
+        <div className="customize-layout">
+          {/* Preview Panel */}
+          <div className="preview-panel glass-card">
+            <h2>Preview</h2>
+            <div className="avatar-preview-wrapper">
+              <Avatar 
+                customization={customization} 
+                gesture={previewGesture} 
+                mood={customization.mood || 'neutral'}
+                size="large"
+              />
+            </div>
+            <div className="preview-actions">
+              <button className="action-btn" onClick={() => triggerGesture('hello')}>
+                👋 Wave
+              </button>
+              <button className="action-btn" onClick={() => triggerGesture('thumbsup')}>
+                👍 Thumbs Up
+              </button>
+              <button className="action-btn" onClick={() => triggerGesture('thinking')}>
+                🤔 Think
+              </button>
             </div>
           </div>
 
-          <div className="option-group">
-            <label>Hair Style</label>
-            <div className="style-picker">
-              {HAIR_STYLES.map(style => (
-                <button
-                  key={style.value}
-                  className={`style-btn ${customization.hairStyle === style.value ? 'selected' : ''}`}
-                  onClick={() => updateField('hairStyle', style.value)}
-                >
-                  {style.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Options Panel */}
+          <div className="options-panel glass-card">
+            <h2>Appearance</h2>
 
-          <div className="option-group">
-            <label>Hair Color</label>
-            <div className="color-picker">
-              {HAIR_COLORS.map(color => (
-                <button
-                  key={color.value}
-                  className={`color-swatch ${customization.hairColor === color.value ? 'selected' : ''}`}
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => updateField('hairColor', color.value)}
-                  title={color.label}
-                  aria-label={color.label}
-                />
-              ))}
+            {/* Gender */}
+            <div className="option-group">
+              <label>Character Style</label>
+              <div className="style-picker">
+                {GENDERS.map(g => (
+                  <button
+                    key={g.value}
+                    className={`style-btn ${customization.gender === g.value ? 'selected' : ''}`}
+                    onClick={() => updateField('gender', g.value)}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="option-group">
-            <label>Eye Color</label>
-            <div className="color-picker">
-              {EYE_COLORS.map(color => (
-                <button
-                  key={color.value}
-                  className={`color-swatch ${customization.eyeColor === color.value ? 'selected' : ''}`}
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => updateField('eyeColor', color.value)}
-                  title={color.label}
-                  aria-label={color.label}
-                />
-              ))}
+            {/* Skin Tone */}
+            <div className="option-group">
+              <label>Skin Tone</label>
+              <div className="color-picker">
+                {SKIN_TONES.map(tone => (
+                  <button
+                    key={tone.value}
+                    className={`color-swatch ${customization.skinTone === tone.value ? 'selected' : ''}`}
+                    style={{ backgroundColor: tone.value }}
+                    onClick={() => updateField('skinTone', tone.value)}
+                    title={tone.label}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="option-group">
-            <label>Shirt Color</label>
-            <div className="color-picker">
-              {SHIRT_COLORS.map(color => (
-                <button
-                  key={color.value}
-                  className={`color-swatch ${customization.shirtColor === color.value ? 'selected' : ''}`}
-                  style={{ backgroundColor: color.value, border: color.value === '#ffffff' ? '1px solid #ccc' : 'none' }}
-                  onClick={() => updateField('shirtColor', color.value)}
-                  title={color.label}
-                  aria-label={color.label}
-                />
-              ))}
+            {/* Hair Style */}
+            <div className="option-group">
+              <label>Hair Style</label>
+              <div className="style-picker">
+                {HAIR_STYLES.map(style => (
+                  <button
+                    key={style.value}
+                    className={`style-btn ${customization.hairStyle === style.value ? 'selected' : ''}`}
+                    onClick={() => updateField('hairStyle', style.value)}
+                  >
+                    {style.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="option-group">
-            <label>Expression</label>
-            <div className="style-picker">
-              {MOODS.map(m => (
-                <button
-                  key={m.value}
-                  className={`style-btn ${customization.mood === m.value ? 'selected' : ''}`}
-                  onClick={() => updateField('mood', m.value)}
-                >
-                  {m.label}
-                </button>
-              ))}
+            {/* Hair Color */}
+            <div className="option-group">
+              <label>Hair Color</label>
+              <div className="color-picker">
+                {HAIR_COLORS.map(color => (
+                  <button
+                    key={color.value}
+                    className={`color-swatch ${customization.hairColor === color.value ? 'selected' : ''}`}
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => updateField('hairColor', color.value)}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Eye Color */}
+            <div className="option-group">
+              <label>Eye Color</label>
+              <div className="color-picker">
+                {EYE_COLORS.map(color => (
+                  <button
+                    key={color.value}
+                    className={`color-swatch ${customization.eyeColor === color.value ? 'selected' : ''}`}
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => updateField('eyeColor', color.value)}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Shirt Color */}
+            <div className="option-group">
+              <label>Shirt Color</label>
+              <div className="color-picker">
+                {SHIRT_COLORS.map(color => (
+                  <button
+                    key={color.value}
+                    className={`color-swatch ${customization.shirtColor === color.value ? 'selected' : ''}`}
+                    style={{ 
+                      backgroundColor: color.value,
+                      border: color.value === '#ffffff' ? '2px solid rgba(255,255,255,0.3)' : 'none'
+                    }}
+                    onClick={() => updateField('shirtColor', color.value)}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Expression */}
+            <div className="option-group">
+              <label>Default Expression</label>
+              <div className="style-picker">
+                {MOODS.map(m => (
+                  <button
+                    key={m.value}
+                    className={`style-btn ${customization.mood === m.value ? 'selected' : ''}`}
+                    onClick={() => updateField('mood', m.value)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
       </div>
-    </main>
+    </div>
   )
 }

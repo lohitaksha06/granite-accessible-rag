@@ -144,7 +144,7 @@ The RAG workflow involves three stages. First, a user query is converted into a 
 
 Vector databases such as FAISS (Facebook AI Similarity Search), developed by Johnson et al. at Meta AI Research [24], provide efficient similarity search over high-dimensional embeddings. FAISS supports both exact (IndexFlatL2) and approximate nearest-neighbour methods (IVF, HNSW), allowing the system to trade precision for speed as the knowledge base scales. For the embedding stage, SentenceTransformers [23] provides a family of pretrained models optimised for semantic textual similarity. The all-MiniLM-L6-v2 model used in this work produces 384-dimensional embeddings and has been trained on over one billion sentence pairs, offering a strong balance between embedding quality and computational efficiency with a memory footprint of approximately 80 MB.
 
-RAG has been applied in domains where factual accuracy is non-negotiable, including healthcare information retrieval [25], legal question answering [26], and enterprise knowledge management [27]. However, its application to accessibility-aware systems remains largely unexplored in the literature. The combination of RAG-based factual grounding with disability-sensitive prompt engineering represents a principal contribution of this work.
+RAG has been applied in domains where factual accuracy is non-negotiable, including healthcare information retrieval [25], legal question answering [26], and enterprise knowledge management [27]. Recent advances have addressed noise reduction in retrieval through mutual information based approaches: Lu et al. [34] proposed MI-RAG, which uses a generate-then-retrieve strategy with knowledge graphs to reduce irrelevant information inclusion and improve domain-specific relevance. In clinical settings, Akkus Yildirim et al. [35] demonstrated that LLMs with structured retrieval can standardize interpretation of complex medical guidelines with higher accuracy and convergence than human experts alone. However, the application of RAG to accessibility-aware systems remains largely unexplored in the literature. The combination of RAG-based factual grounding with disability-sensitive prompt engineering represents a principal contribution of this work.
 
 == Non-Immersive Metaverse Layers
 
@@ -525,4 +525,8 @@ The broader significance of this work lies in reframing accessibility not as a s
 \[32\] European Parliament, "Regulation (EU) 2016/679 (General Data Protection Regulation)," _Official Journal of the European Union_, 2016.\
 
 \[33\] A. Radford _et al._, "Robust speech recognition via large-scale weak supervision," in _Proc. ICML_, 2023, pp. 28492--28518.\
+
+\[34\] H. Lu, D. Zheng, and L. Yang, "Mutual information-based retrieval-augmented generation for domain question answering," _Knowledge and Information Systems_, 2026, DOI: 10.1007/s10115-025-02624-x.\
+
+\[35\] B. Akkus Yildirim _et al._, "Large language models standardize the interpretation of complex oncology guidelines for brain metastases," _Communications Medicine_, vol. 6, 2026, DOI: 10.1038/s43856-025-01315-6.\
 ]
