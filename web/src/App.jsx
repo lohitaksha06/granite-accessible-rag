@@ -240,8 +240,19 @@ function ChatPage({ customization }) {
 
       const data = await resp.json()
       setAnswer(String(data?.answer ?? ''))
-      setGesture('thumbsup')
-      setMood('happy')
+      
+      // Use gesture hint from backend (hello/goodbye/thanks/thumbsup)
+      const backendGesture = data?.gesture || 'thumbsup'
+      if (backendGesture === 'hello' || backendGesture === 'goodbye') {
+        setGesture(backendGesture)
+        setMood('happy')
+      } else if (backendGesture === 'thanks') {
+        setGesture('thumbsup')
+        setMood('happy')
+      } else {
+        setGesture('thumbsup')
+        setMood('happy')
+      }
     } catch {
       setError('Sorry, the assistant is unavailable right now.')
       setMood('sad')

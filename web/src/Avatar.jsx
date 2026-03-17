@@ -30,32 +30,37 @@ export default function Avatar({ customization, gesture, mood, size = 'medium' }
   useEffect(() => {
     if (gesture === 'hello') {
       let frame = 0
-      const interval = setInterval(() => {
-        setArmRotation(Math.sin(frame * 0.3) * 30 - 45)
-        frame++
-        if (frame > 20) {
-          clearInterval(interval)
-          setArmRotation(0)
-          setCurrentGesture('idle')
-        }
-      }, 50)
       setCurrentGesture('hello')
-      return () => clearInterval(interval)
-    } else if (gesture === 'goodbye') {
-      let frame = 0
+      // Lift arm up high (-120) then wave side to side
       const interval = setInterval(() => {
-        setArmRotation(Math.sin(frame * 0.2) * 40 - 30)
+        // Wave between -100 and -140 degrees (arm raised high, waving)
+        const waveAngle = Math.sin(frame * 0.4) * 20 - 120
+        setArmRotation(waveAngle)
         frame++
         if (frame > 30) {
           clearInterval(interval)
           setArmRotation(0)
           setCurrentGesture('idle')
         }
-      }, 60)
+      }, 50)
+      return () => clearInterval(interval)
+    } else if (gesture === 'goodbye') {
+      let frame = 0
       setCurrentGesture('goodbye')
+      const interval = setInterval(() => {
+        // Similar wave for goodbye
+        const waveAngle = Math.sin(frame * 0.3) * 25 - 110
+        setArmRotation(waveAngle)
+        frame++
+        if (frame > 40) {
+          clearInterval(interval)
+          setArmRotation(0)
+          setCurrentGesture('idle')
+        }
+      }, 60)
       return () => clearInterval(interval)
     } else if (gesture === 'thumbsup') {
-      setArmRotation(-60)
+      setArmRotation(-80)
       setCurrentGesture('thumbsup')
       const timeout = setTimeout(() => {
         setArmRotation(0)
@@ -72,6 +77,10 @@ export default function Avatar({ customization, gesture, mood, size = 'medium' }
   }, [gesture])
 
   const getMouthPath = () => {
+    // When waving (hello/goodbye gesture), show excited open mouth
+    if (currentGesture === 'hello' || currentGesture === 'goodbye') {
+      return 'open' // Signal to render open mouth shape
+    }
     switch (mood) {
       case 'happy':
         return 'M 85 145 Q 100 162 115 145'
@@ -81,6 +90,8 @@ export default function Avatar({ customization, gesture, mood, size = 'medium' }
         return 'M 92 148 Q 100 160 108 148 Q 100 148 92 148'
       case 'thinking':
         return 'M 88 150 L 112 150'
+      case 'excited':
+        return 'open' // Open mouth for excited
       default:
         return 'M 88 150 Q 100 157 112 150'
     }
@@ -352,13 +363,40 @@ export default function Avatar({ customization, gesture, mood, size = 'medium' }
       />
       
       {/* Mouth */}
-      <path 
-        d={getMouthPath()} 
-        fill="none" 
-        stroke={isFemale ? "#d44" : "#c44"} 
-        strokeWidth={isFemale ? 2.5 : 3} 
-        strokeLinecap="round" 
-      />
+      {getMouthPath() === 'open' ? (
+        // Open excited mouth (like saying "Hi!")
+        <>
+          <ellipse 
+            cx="100" 
+            cy={isFemale ? 148 : 150} 
+            rx="12" 
+            ry="10" 
+            fill="#2a1a1a" 
+          />
+          {/* Teeth */}
+          <rect x="92" y={isFemale ? 141 : 143} width="16" height="5" rx="1" fill="white" />
+          {/* Tongue hint */}
+          <ellipse cx="100" cy={isFemale ? 154 : 156} rx="6" ry="4" fill="#c66" />
+          {/* Lip outline */}
+          <ellipse 
+            cx="100" 
+            cy={isFemale ? 148 : 150} 
+            rx="13" 
+            ry="11" 
+            fill="none"
+            stroke={isFemale ? "#d44" : "#c44"}
+            strokeWidth="2"
+          />
+        </>
+      ) : (
+        <path 
+          d={getMouthPath()} 
+          fill="none" 
+          stroke={isFemale ? "#d44" : "#c44"} 
+          strokeWidth={isFemale ? 2.5 : 3} 
+          strokeLinecap="round" 
+        />
+      )}
       
       {/* Blush for female when happy */}
       {isFemale && mood === 'happy' && (
