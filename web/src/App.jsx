@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Avatar from './Avatar'
 import CustomizePage from './CustomizePage'
 import StarBackground from './StarBackground'
+import { createHandWaveDetector } from './vision'
 import './styles.css'
 
 const DISABILITY_OPTIONS = [
@@ -191,6 +192,109 @@ function ChatPage({ customization }) {
   const [error, setError] = useState('')
   const [gesture, setGesture] = useState('idle')
   const [mood, setMood] = useState(customization.mood || 'neutral')
+  const [cameraState, setCameraState] = useState('idle')
+  const [cameraMessage, setCameraMessage] = useState('Camera is off. You can continue without it.')
+
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+  const detectorRef = useRef(null)
+  const gestureResetRef = useRef(null)
+
+  const stopVision = () => {
+    if (detectorRef.current) {
+      detectorRef.current.stop()
+      detectorRef.current = null
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+  }
+
+  const reactToWave = () => {
+    setGesture('hello')
+    setMood('happy')
+    setCameraMessage('Wave detected. Waving back!')
+
+    if (gestureResetRef.current) {
+      clearTimeout(gestureResetRef.current)
+    }
+
+    gestureResetRef.current = setTimeout(() => {
+      setGesture('idle')
+      setCameraMessage('Camera is on. Wave anytime to get a wave back.')
+    }, 1700)
+  }
+
+  const disableCamera = () => {
+    stopVision()
+    setCameraState('skipped')
+    setCameraMessage('Camera turned off. Chat is still fully available.')
+  }
+
+  const enableCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraState('unsupported')
+      setCameraMessage('Camera access is not supported in this browser.')
+      return
+    }
+
+    setCameraState('requesting')
+    setCameraMessage('Waiting for your camera permission...')
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false
+      })
+
+      if (!videoRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        setCameraState('error')
+        setCameraMessage('Camera started, but preview was unavailable. Please retry.')
+        return
+      }
+
+      streamRef.current = stream
+      videoRef.current.srcObject = stream
+      await videoRef.current.play()
+
+      detectorRef.current = await createHandWaveDetector({
+        video: videoRef.current,
+        onWave: reactToWave,
+        onError: () => {
+          setCameraMessage('Vision temporarily lost. Please keep your hand visible.')
+        }
+      })
+
+      setCameraState('active')
+      setCameraMessage('Camera is on. Wave anytime to get a wave back.')
+    } catch (err) {
+      stopVision()
+
+      if (err?.name === 'NotAllowedError' || err?.name === 'SecurityError') {
+        setCameraState('denied')
+        setCameraMessage('No problem. Camera stays off unless you choose to enable it later.')
+      } else {
+        setCameraState('error')
+        setCameraMessage('Could not start the camera right now. You can keep chatting without it.')
+      }
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      stopVision()
+      if (gestureResetRef.current) {
+        clearTimeout(gestureResetRef.current)
+      }
+    }
+  }, [])
 
   // React to states
   useEffect(() => {
@@ -311,6 +415,41 @@ function ChatPage({ customization }) {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="camera-section glass-card">
+            <h3>Camera Gestures (Optional)</h3>
+            <p className="camera-help">
+              Enable camera access if you want to wave at the assistant and get a live wave back.
+              If you say no, everything still works normally.
+            </p>
+
+            <div className="camera-actions">
+              {cameraState !== 'active' && (
+                <button
+                  className="submit-btn"
+                  onClick={enableCamera}
+                  disabled={cameraState === 'requesting'}
+                >
+                  {cameraState === 'requesting' ? 'Requesting Access...' : 'Enable Camera'}
+                </button>
+              )}
+
+              <button className="subtle-btn" onClick={disableCamera}>
+                {cameraState === 'active' ? 'Turn Off Camera' : 'Not Now'}
+              </button>
+            </div>
+
+            <p className={`camera-message ${cameraState}`}>{cameraMessage}</p>
+
+            <video
+              ref={videoRef}
+              className="camera-preview"
+              autoPlay
+              muted
+              playsInline
+              aria-label="Camera preview for gesture detection"
+            />
           </div>
 
           <div className="query-section glass-card">

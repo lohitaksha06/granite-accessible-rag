@@ -338,6 +338,81 @@ body {
   gap: 24px;
 }
 
+.camera-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.camera-section h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.camera-help {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.subtle-btn {
+  padding: 12px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.subtle-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.camera-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.camera-message.active {
+  color: var(--success);
+}
+
+.camera-message.denied,
+.camera-message.error,
+.camera-message.unsupported {
+  color: var(--warning);
+}
+
+.camera-preview {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 14px;
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.02);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.2s ease;
+}
+
+.camera-message.active + .camera-preview {
+  opacity: 1;
+  max-height: 210px;
+}
+
 .controls-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
