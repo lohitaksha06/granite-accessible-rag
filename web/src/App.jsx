@@ -83,6 +83,34 @@ function detectGesture(text) {
   return null
 }
 
+function detectQuerySignals(text) {
+  const lower = text.toLowerCase().trim()
+
+  const sadnessWords = [
+    'sad', 'upset', 'depressed', 'down', 'cry', 'hurt', 'lonely', 'anxious', 'stressed'
+  ]
+
+  const offensiveWords = [
+    'stupid', 'idiot', 'hate', 'dumb', 'useless', 'shut up', 'moron', 'trash', 'worst'
+  ]
+
+  const questionWords = [
+    'what', 'why', 'how', 'when', 'where', 'who', 'can you', 'could you', 'would you', 'is it', 'do you'
+  ]
+
+  const hasSadTone = sadnessWords.some((w) => lower.includes(w))
+  const hasOffensiveTone = offensiveWords.some((w) => lower.includes(w))
+  const looksLikeQuestion =
+    lower.includes('?') ||
+    questionWords.some((w) => lower.startsWith(`${w} `) || lower.includes(` ${w} `))
+
+  return {
+    hasSadTone,
+    hasOffensiveTone,
+    looksLikeQuestion
+  }
+}
+
 // Navigation Component
 function Navigation({ currentPage, setCurrentPage }) {
   return (
@@ -313,16 +341,37 @@ function ChatPage({ customization }) {
 
   // Detect gesture from query
   useEffect(() => {
-    if (query && !loading) {
-      const detected = detectGesture(query)
-      if (detected) {
-        setGesture(detected)
-        if (detected === 'hello' || detected === 'thumbsup') setMood('happy')
-        const timer = setTimeout(() => setGesture('idle'), 2500)
-        return () => clearTimeout(timer)
-      }
+    if (!query || loading) return
+
+    const detected = detectGesture(query)
+    const { hasSadTone, hasOffensiveTone, looksLikeQuestion } = detectQuerySignals(query)
+
+    if (hasSadTone || hasOffensiveTone) {
+      setMood('sad')
+      setGesture('idle')
+      return
     }
-  }, [query, loading])
+
+    if (detected) {
+      setGesture(detected)
+      if (detected === 'hello' || detected === 'thumbsup') {
+        setMood('happy')
+      }
+
+      const timer = setTimeout(() => setGesture('idle'), 2500)
+      return () => clearTimeout(timer)
+    }
+
+    if (looksLikeQuestion) {
+      setMood('thinking')
+      setGesture('thinking')
+      const timer = setTimeout(() => setGesture('idle'), 2000)
+      return () => clearTimeout(timer)
+    }
+
+    setMood(customization.mood || 'neutral')
+    setGesture('idle')
+  }, [query, loading, customization.mood])
 
   const canSubmit = query.trim().length > 0 && !loading
 
@@ -458,7 +507,7 @@ function ChatPage({ customization }) {
               id="query"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type your question here... (Try saying 'Hello!' or 'Thank you!')"
+              placeholder="Type your question here... (Questions trigger thinking, tone can change mood)"
               rows={3}
             />
             <button 
