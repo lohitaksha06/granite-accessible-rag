@@ -296,6 +296,49 @@ body {
 
 .avatar-status {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.emotion-badge {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.emotion-badge.positive {
+  color: var(--success);
+  background: rgba(0, 217, 166, 0.14);
+}
+
+.emotion-badge.question {
+  color: var(--warning);
+  background: rgba(255, 193, 7, 0.14);
+}
+
+.emotion-badge.sad,
+.emotion-badge.offensive {
+  color: var(--error);
+  background: rgba(255, 87, 87, 0.14);
+}
+
+.emotion-badge.mixed {
+  color: #ff9f6e;
+  background: rgba(255, 159, 110, 0.14);
+}
+
+.action-readout {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .status {
@@ -411,6 +454,86 @@ body {
 .camera-message.active + .camera-preview {
   opacity: 1;
   max-height: 210px;
+}
+
+.reaction-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reaction-dashboard h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.dashboard-block {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.dashboard-block h4 {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.action-list {
+  list-style: disc;
+  margin-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-grid label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.settings-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px;
+  resize: vertical;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .controls-row {
@@ -807,6 +930,10 @@ body {
   
   .avatar-wrapper .avatar-svg {
     width: 220px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
   }
 }
 

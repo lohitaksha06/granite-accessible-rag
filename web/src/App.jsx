@@ -3,6 +3,7 @@ import Avatar from './Avatar'
 import CustomizePage from './CustomizePage'
 import StarBackground from './StarBackground'
 import { createHandWaveDetector } from './vision'
+import { DEFAULT_REACTION_SETTINGS, resolveInputReaction } from './reactionSignals'
 import './styles.css'
 
 const DISABILITY_OPTIONS = [
@@ -53,62 +54,6 @@ const DEFAULT_CUSTOMIZATION = {
   shirtColor: '#4a90d9',
   mood: 'neutral',
   gender: 'neutral'
-}
-
-// Detect greetings in multiple languages
-function detectGesture(text) {
-  const lower = text.toLowerCase()
-  
-  const helloWords = [
-    'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
-    'hola', 'bonjour', 'hallo', 'ciao', 'olá', 'привет', 'こんにちは', '你好', '안녕하세요',
-    'مرحبا', 'नमस्ते', 'xin chào', 'สวัสดี', 'cześć'
-  ]
-  
-  const goodbyeWords = [
-    'goodbye', 'bye', 'see you', 'farewell', 'take care',
-    'adiós', 'au revoir', 'auf wiedersehen', 'arrivederci', 'tchau',
-    'до свидания', 'さようなら', '再见', '안녕히', 'مع السلامة', 'अलविदा'
-  ]
-  
-  const thankWords = [
-    'thank', 'thanks', 'gracias', 'merci', 'danke', 'grazie', 'obrigado',
-    'спасибо', 'ありがとう', '谢谢', '감사합니다', 'شكرا', 'धन्यवाद'
-  ]
-  
-  if (helloWords.some(w => lower.includes(w))) return 'hello'
-  if (goodbyeWords.some(w => lower.includes(w))) return 'goodbye'
-  if (thankWords.some(w => lower.includes(w))) return 'thumbsup'
-  
-  return null
-}
-
-function detectQuerySignals(text) {
-  const lower = text.toLowerCase().trim()
-
-  const sadnessWords = [
-    'sad', 'upset', 'depressed', 'down', 'cry', 'hurt', 'lonely', 'anxious', 'stressed'
-  ]
-
-  const offensiveWords = [
-    'stupid', 'idiot', 'hate', 'dumb', 'useless', 'shut up', 'moron', 'trash', 'worst'
-  ]
-
-  const questionWords = [
-    'what', 'why', 'how', 'when', 'where', 'who', 'can you', 'could you', 'would you', 'is it', 'do you'
-  ]
-
-  const hasSadTone = sadnessWords.some((w) => lower.includes(w))
-  const hasOffensiveTone = offensiveWords.some((w) => lower.includes(w))
-  const looksLikeQuestion =
-    lower.includes('?') ||
-    questionWords.some((w) => lower.startsWith(`${w} `) || lower.includes(` ${w} `))
-
-  return {
-    hasSadTone,
-    hasOffensiveTone,
-    looksLikeQuestion
-  }
 }
 
 // Navigation Component
@@ -220,6 +165,13 @@ function ChatPage({ customization }) {
   const [error, setError] = useState('')
   const [gesture, setGesture] = useState('idle')
   const [mood, setMood] = useState(customization.mood || 'neutral')
+  const [emotionBadge, setEmotionBadge] = useState('Neutral tone')
+  const [emotionTone, setEmotionTone] = useState('neutral')
+  const [currentAction, setCurrentAction] = useState('Idle')
+  const [reactionSettings, setReactionSettings] = useState(() => {
+    const saved = localStorage.getItem('reactionSettings')
+    return saved ? JSON.parse(saved) : DEFAULT_REACTION_SETTINGS
+  })
   const [cameraState, setCameraState] = useState('idle')
   const [cameraMessage, setCameraMessage] = useState('Camera is off. You can continue without it.')
 
@@ -247,6 +199,7 @@ function ChatPage({ customization }) {
   const reactToWave = () => {
     setGesture('hello')
     setMood('happy')
+    setCurrentAction('Camera wave back')
     setCameraMessage('Wave detected. Waving back!')
 
     if (gestureResetRef.current) {
@@ -255,6 +208,7 @@ function ChatPage({ customization }) {
 
     gestureResetRef.current = setTimeout(() => {
       setGesture('idle')
+      setCurrentAction('Idle')
       setCameraMessage('Camera is on. Wave anytime to get a wave back.')
     }, 1700)
   }
@@ -262,6 +216,7 @@ function ChatPage({ customization }) {
   const disableCamera = () => {
     stopVision()
     setCameraState('skipped')
+    setCurrentAction('Camera disabled')
     setCameraMessage('Camera turned off. Chat is still fully available.')
   }
 
@@ -273,6 +228,7 @@ function ChatPage({ customization }) {
     }
 
     setCameraState('requesting')
+    setCurrentAction('Requesting camera access')
     setCameraMessage('Waiting for your camera permission...')
 
     try {
@@ -301,18 +257,34 @@ function ChatPage({ customization }) {
       })
 
       setCameraState('active')
+      setCurrentAction('Camera active')
       setCameraMessage('Camera is on. Wave anytime to get a wave back.')
     } catch (err) {
       stopVision()
 
       if (err?.name === 'NotAllowedError' || err?.name === 'SecurityError') {
         setCameraState('denied')
+        setCurrentAction('Camera denied by user')
         setCameraMessage('No problem. Camera stays off unless you choose to enable it later.')
       } else {
         setCameraState('error')
+        setCurrentAction('Camera error')
         setCameraMessage('Could not start the camera right now. You can keep chatting without it.')
       }
     }
+  }
+
+  useEffect(() => {
+    localStorage.setItem('reactionSettings', JSON.stringify(reactionSettings))
+  }, [reactionSettings])
+
+  const updateReactionSetting = (key, value) => {
+    setReactionSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const resetReactionSettings = () => {
+    setReactionSettings(DEFAULT_REACTION_SETTINGS)
+    setCurrentAction('Reaction settings reset')
   }
 
   useEffect(() => {
@@ -329,49 +301,42 @@ function ChatPage({ customization }) {
     if (loading) {
       setGesture('thinking')
       setMood('thinking')
+      setCurrentAction('Thinking while generating answer')
     } else if (answer) {
       setGesture('thumbsup')
       setMood('happy')
+      setCurrentAction('Answer delivered')
       const timer = setTimeout(() => setGesture('idle'), 2000)
       return () => clearTimeout(timer)
     } else if (error) {
       setMood('sad')
+      setCurrentAction('Error state')
     }
   }, [loading, answer, error])
 
   // Detect gesture from query
   useEffect(() => {
-    if (!query || loading) return
-
-    const detected = detectGesture(query)
-    const { hasSadTone, hasOffensiveTone, looksLikeQuestion } = detectQuerySignals(query)
-
-    if (hasSadTone || hasOffensiveTone) {
-      setMood('sad')
-      setGesture('idle')
+    if (!query || loading) {
+      setEmotionBadge('Neutral tone')
+      setEmotionTone('neutral')
+      if (!loading) {
+        setCurrentAction('Idle')
+      }
       return
     }
 
-    if (detected) {
-      setGesture(detected)
-      if (detected === 'hello' || detected === 'thumbsup') {
-        setMood('happy')
-      }
+    const reaction = resolveInputReaction(query, customization.mood || 'neutral', reactionSettings)
+    setMood(reaction.mood)
+    setGesture(reaction.gesture)
+    setEmotionBadge(reaction.badgeText)
+    setEmotionTone(reaction.badgeTone)
+    setCurrentAction(reaction.badgeText)
 
+    if (reaction.gesture === 'hello' || reaction.gesture === 'goodbye' || reaction.gesture === 'thumbsup') {
       const timer = setTimeout(() => setGesture('idle'), 2500)
       return () => clearTimeout(timer)
     }
-
-    if (looksLikeQuestion) {
-      setMood('thinking')
-      setGesture('thinking')
-      const timer = setTimeout(() => setGesture('idle'), 2000)
-      return () => clearTimeout(timer)
-    }
-
-    setMood(customization.mood || 'neutral')
-    setGesture('idle')
-  }, [query, loading, customization.mood])
+  }, [query, loading, customization.mood, reactionSettings])
 
   const canSubmit = query.trim().length > 0 && !loading
 
@@ -428,6 +393,10 @@ function ChatPage({ customization }) {
               size="large"
             />
             <div className="avatar-status">
+              <span className={`emotion-badge ${emotionTone}`}>
+                {emotionBadge}
+              </span>
+              <span className="action-readout">Current action: {currentAction}</span>
               {loading && <span className="status thinking">🤔 Thinking...</span>}
               {!loading && answer && <span className="status ready">✨ Here's your answer!</span>}
               {!loading && !answer && !error && <span className="status idle">👋 Ask me anything!</span>}
@@ -499,6 +468,127 @@ function ChatPage({ customization }) {
               playsInline
               aria-label="Camera preview for gesture detection"
             />
+          </div>
+
+          <div className="reaction-dashboard glass-card">
+            <h3>Reaction Dashboard</h3>
+            <p className="camera-help">Live reaction controls and the full action map for this avatar.</p>
+
+            <div className="dashboard-grid">
+              <div className="dashboard-block">
+                <h4>Supported Actions</h4>
+                <ul className="action-list">
+                  <li>Camera wave detected: avatar waves hello</li>
+                  <li>Greeting text: hello wave animation</li>
+                  <li>Goodbye text: goodbye wave animation</li>
+                  <li>Thanks text: thumbs-up animation</li>
+                  <li>Question text: thinking mood and pose</li>
+                  <li>Sad tone text: sad mood</li>
+                  <li>Offensive tone text: sad/protective mood</li>
+                  <li>Mixed negative question: sad plus thinking blend</li>
+                  <li>During backend response: thinking action</li>
+                  <li>Answer delivered: happy thumbs-up</li>
+                  <li>Error state: sad fallback</li>
+                </ul>
+              </div>
+
+              <div className="dashboard-block">
+                <h4>Sensitivity Settings</h4>
+                <div className="settings-grid">
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={reactionSettings.enableGreetings}
+                      onChange={(e) => updateReactionSetting('enableGreetings', e.target.checked)}
+                    />
+                    Enable greetings and thanks detection
+                  </label>
+
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={reactionSettings.enableQuestionDetection}
+                      onChange={(e) => updateReactionSetting('enableQuestionDetection', e.target.checked)}
+                    />
+                    Enable question detection
+                  </label>
+
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={reactionSettings.enableSadTone}
+                      onChange={(e) => updateReactionSetting('enableSadTone', e.target.checked)}
+                    />
+                    Enable sad tone detection
+                  </label>
+
+                  <label className="toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={reactionSettings.enableOffensiveTone}
+                      onChange={(e) => updateReactionSetting('enableOffensiveTone', e.target.checked)}
+                    />
+                    Enable offensive tone detection
+                  </label>
+
+                  <label htmlFor="helloWords">Greeting words (comma-separated)</label>
+                  <textarea
+                    id="helloWords"
+                    className="settings-input"
+                    value={reactionSettings.helloWordsText}
+                    onChange={(e) => updateReactionSetting('helloWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <label htmlFor="goodbyeWords">Goodbye words (comma-separated)</label>
+                  <textarea
+                    id="goodbyeWords"
+                    className="settings-input"
+                    value={reactionSettings.goodbyeWordsText}
+                    onChange={(e) => updateReactionSetting('goodbyeWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <label htmlFor="thanksWords">Thanks words (comma-separated)</label>
+                  <textarea
+                    id="thanksWords"
+                    className="settings-input"
+                    value={reactionSettings.thanksWordsText}
+                    onChange={(e) => updateReactionSetting('thanksWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <label htmlFor="questionWords">Question words (comma-separated)</label>
+                  <textarea
+                    id="questionWords"
+                    className="settings-input"
+                    value={reactionSettings.questionWordsText}
+                    onChange={(e) => updateReactionSetting('questionWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <label htmlFor="sadWords">Sad tone words (comma-separated)</label>
+                  <textarea
+                    id="sadWords"
+                    className="settings-input"
+                    value={reactionSettings.sadnessWordsText}
+                    onChange={(e) => updateReactionSetting('sadnessWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <label htmlFor="offensiveWords">Offensive words (comma-separated)</label>
+                  <textarea
+                    id="offensiveWords"
+                    className="settings-input"
+                    value={reactionSettings.offensiveWordsText}
+                    onChange={(e) => updateReactionSetting('offensiveWordsText', e.target.value)}
+                    rows={2}
+                  />
+
+                  <button className="subtle-btn" onClick={resetReactionSettings}>Reset Defaults</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="query-section glass-card">
