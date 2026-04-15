@@ -37,7 +37,7 @@ function isWaveGesture(points) {
   return flips >= MIN_DIRECTION_FLIPS
 }
 
-export async function createHandWaveDetector({ video, onWave, onError }) {
+export async function createHandWaveDetector({ video, onWave, onShape, onError }) {
   const vision = await FilesetResolver.forVisionTasks(
     'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm'
   )
@@ -56,8 +56,54 @@ export async function createHandWaveDetector({ video, onWave, onError }) {
 
   let running = true
   let rafId = 0
-  let lastWaveAt = 0
+  let lastActionAt = 0
   const history = []
+
+  function detectShape(points) {
+    if (points.length < 15) return null;
+
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const area = width * height;
+    
+    if (width < 0.15 || height < 0.15 || area < 0.03) return null; // shape too small
+
+    const first = points[0];
+    const last = points[points.length - 1];
+    const distance = Math.sqrt((first.x - last.x)**2 + (first.y - last.y)**2);
+    const maxDim = Math.max(width, height);
+    if (distance > maxDim * 0.4) {
+      return null; // Not a closed shape
+    }
+
+    let polyArea = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      polyArea += points[i].x * points[i+1].y - points[i+1].x * points[i].y;
+    }
+    polyArea += points[points.length-1].x * points[0].y - points[0].x * points[points.length-1].y;
+    polyArea = Math.abs(polyArea) / 2;
+
+    const fillRatio = polyArea / area;
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const radiuses = points.map(p => Math.sqrt((p.x - cx)**2 + (p.y - cy)**2));
+    const avgRadius = radiuses.reduce((a, b) => a + b, 0) / radiuses.length;
+    const varRadius = radiuses.reduce((a, b) => a + Math.pow(b - avgRadius, 2), 0) / radiuses.length;
+    const cv = Math.sqrt(varRadius) / avgRadius;
+
+    if (cv < 0.15 && fillRatio > 0.65) return 'circle';
+    if (fillRatio > 0.35 && fillRatio < 0.6) return 'triangle';
+    if (fillRatio >= 0.6 && cv >= 0.15) return 'square';
+    return null;
+  }
 
   const loop = () => {
     if (!running) return
@@ -68,17 +114,30 @@ export async function createHandWaveDetector({ video, onWave, onError }) {
         const result = handLandmarker.detectForVideo(video, now)
         const hand = result?.landmarks?.[0]
 
-        if (hand?.[0]) {
-          history.push({ x: hand[0].x, time: now })
+        if (hand?.[8]) { // using index finger tip for better shape drawing
+          history.push({ x: hand[8].x, y: hand[8].y, time: now })
 
-          while (history.length > 0 && now - history[0].time > WAVE_WINDOW_MS) {
+          while (history.length > 0 && now - history[0].time > 2000) { // 2 seconds window
             history.shift()
           }
 
-          if (now - lastWaveAt > WAVE_COOLDOWN_MS && isWaveGesture(history)) {
-            lastWaveAt = now
-            history.length = 0
-            onWave?.()
+          if (now - lastActionAt > WAVE_COOLDOWN_MS) {
+            // Check for wave (using wrist point)
+            const wrist = hand[0];
+            const wavePoints = history.map(p => ({ x: wrist.x, time: p.time })); // approximate wave using history time frames but recent wrist position
+            
+            if (isWaveGesture(history)) {
+              lastActionAt = now
+              history.length = 0
+              onWave?.()
+            } else {
+              const shape = detectShape(history);
+              if (shape) {
+                lastActionAt = now
+                history.length = 0
+                onShape?.(shape)
+              }
+            }
           }
         }
       }

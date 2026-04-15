@@ -213,6 +213,23 @@ function ChatPage({ customization }) {
     }, 1700)
   }
 
+  const reactToShape = (shape) => {
+    setGesture('thumbsup')
+    setMood('happy')
+    setCurrentAction(`Detected shape: ${shape}`)
+    setCameraMessage(`You drew a ${shape}!`)
+
+    if (gestureResetRef.current) {
+      clearTimeout(gestureResetRef.current)
+    }
+
+    gestureResetRef.current = setTimeout(() => {
+      setGesture('idle')
+      setCurrentAction('Idle')
+      setCameraMessage('Camera is on. Wave or draw a shape (circle/square/triangle).')
+    }, 2500)
+  }
+
   const disableCamera = () => {
     stopVision()
     setCameraState('skipped')
@@ -251,6 +268,7 @@ function ChatPage({ customization }) {
       detectorRef.current = await createHandWaveDetector({
         video: videoRef.current,
         onWave: reactToWave,
+        onShape: reactToShape,
         onError: () => {
           setCameraMessage('Vision temporarily lost. Please keep your hand visible.')
         }
@@ -258,7 +276,7 @@ function ChatPage({ customization }) {
 
       setCameraState('active')
       setCurrentAction('Camera active')
-      setCameraMessage('Camera is on. Wave anytime to get a wave back.')
+      setCameraMessage('Camera is on. Wave or draw a shape (circle/square/triangle).')
     } catch (err) {
       stopVision()
 
