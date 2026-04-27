@@ -71,6 +71,7 @@ class AskRequest(BaseModel):
     query: str
     disability: str = "blind"
     language: str = "english"
+    visual_context: str = "None"
 
 
 class AskResponse(BaseModel):
@@ -109,6 +110,7 @@ def ask(request: AskRequest):
         request.query,
         disability=disability_instruction,
         language=language_instruction,
+        visual_context=request.visual_context
     )
 
     answer = generate_response(prompt)

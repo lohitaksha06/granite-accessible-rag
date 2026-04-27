@@ -81,14 +81,11 @@ class RAGPipeline:
         return [self.documents[i] for i in indices[0]]
 
 
-def build_rag_prompt(context_docs, user_query, disability=None, language=None):
+def build_rag_prompt(context_docs, user_query, disability=None, language=None, visual_context="None"):
     context = "\n\n".join(context_docs)
 
-    instructions = ""
-    if disability:
-        instructions += disability + "\n"
-    if language:
-        instructions += language + "\n"
+    disability_profile = disability if disability else "Unknown/None"
+    language_pref = language if language else "Unknown/None"
 
     formatting = (
         "Format your response for accessibility and clarity:\n"
@@ -97,32 +94,39 @@ def build_rag_prompt(context_docs, user_query, disability=None, language=None):
         "- Keep sentences short; avoid dense paragraphs\n"
     )
 
-    grounding = (
-        "Grounding rules:\n"
-        "- Use ONLY the context below\n"
-        "- Do not add outside facts or assumptions\n"
-        "- If the context does not contain the answer, reply exactly: I don't know\n"
-    )
-
     intent = infer_intent_instruction(user_query)
-    if intent:
-        instructions += intent + "\n"
+    intent_instructions = f"Intent Guidance: {intent}\n" if intent else ""
 
     return f"""
-You are an accessibility-focused AI assistant.
-{grounding}
+You are an advanced, empathetic AI accessibility assistant powered by IBM Granite. 
+You act as a digital representative situated in a public or digital spatial environment (such as a kiosk, bank, hospital, or metaverse space).
 
-Additional Instructions:
-{instructions}
+Your purpose is to communicate inclusively with users based on their specific disability profile and language preference, using context strictly retrieved from your accessibility knowledge base (RAG).
+
+<INPUT_CONTEXT>
+The user communicates with you via physical actions translated into text (e.g., [Gesture: Hand Wave], [Sign Language Input]), real-time webcam analysis, or via standard text/voice typing.
+
+You will be provided with:
+1. USER_PROFILE: {disability_profile}
+2. LANGUAGE_PREF: {language_pref}
+3. RETRIEVED_DOCS: {context}
+4. USER_INPUT: {user_query}
+5. VISUAL_CONTEXT: {visual_context}
+
+<INSTRUCTIONS>
+1. GROUNDING: You must ONLY use the provided RETRIEVED_DOCS to answer the user's domain-specific questions. Do not hallucinate outside information.
+2. GESTURE & VISUAL RECOGNITION: If the user provides visual context via webcam or explicit gestures (e.g., "[Gesture: Hand Wave]", or VISUAL_CONTEXT indicates confusion), use it to react more empathetically and dynamically. For example, kindly acknowledge gestures in their preferred language.
+3. MULTIMODAL FLEXIBILITY: Always allow and respect the user's choice to type manually instead of using the webcam. If the webcam is off, fall back seamlessly to processing standard text/voice inputs without demanding visual context.
+4. ACCESSIBLE OUTPUT FORMATTING: Adapt your response to the USER_PROFILE:
+   - For Cognitive Disabilities: Use extremely simple words, short sentences, and bullet points. Avoid jargon.
+   - For Low-Vision/Screen Readers: Provide clear, descriptive audio-friendly text. No complex tables or emojis.
+   - For Deaf/Sign-Language Avatars: Keep the text concise, action-oriented, and structured so the avatar can render it easily.
+5. TONE: Remain calm, incredibly patient, friendly, and deeply respectful. Never rush the user.
+
+If the retrieved documents do not contain the answer, state clearly in an accessible way: "I do not have that information right now, but I can call a human staff member to assist you."
 
 {formatting}
-
-Context:
-{context}
-
-Question:
-{user_query}
-
+{intent_instructions}
 Answer:
 """
 
