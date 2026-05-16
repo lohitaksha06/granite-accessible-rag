@@ -1,4 +1,4 @@
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
+import { FilesetResolver, HandLandmarker, GestureRecognizer } from '@mediapipe/tasks-vision'
 
 const WAVE_WINDOW_MS = 1200
 const MIN_WAVE_POINTS = 8
@@ -129,20 +129,20 @@ export async function createHandWaveDetector({ video, onWave, onShape, onError }
             if (isWaveGesture(history)) {
               lastActionAt = now
               history.length = 0
-              onWave?.()
+              if (onWave) onWave()
             } else {
               const shape = detectShape(history);
               if (shape) {
                 lastActionAt = now
                 history.length = 0
-                onShape?.(shape)
+                if (onShape) onShape(shape)
               }
             }
           }
         }
       }
     } catch (err) {
-      onError?.(err)
+      if (onError) onError(err)
     }
 
     rafId = requestAnimationFrame(loop)
@@ -155,6 +155,67 @@ export async function createHandWaveDetector({ video, onWave, onShape, onError }
       running = false
       cancelAnimationFrame(rafId)
       handLandmarker.close()
+    }
+  }
+}
+
+export async function createAdvancedGestureDetector({ video, onGesture, onError }) {
+  const vision = await FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm'
+  )
+
+  const gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'
+    },
+    runningMode: 'VIDEO'
+  })
+
+  let running = true
+  let rafId = 0
+  let lastActionAt = 0
+
+  const loop = () => {
+    if (!running) return
+
+    try {
+      if (video.readyState >= 2) {
+        const now = performance.now()
+        const result = gestureRecognizer.recognizeForVideo(video, now)
+
+        if (result.gestures.length > 0) {
+          const gestureName = result.gestures[0][0].categoryName;
+          // Map default MediaPipe gestures to actions
+          // "Closed_Fist", "Open_Palm", "Pointing_Up", "Thumb_Down", "Thumb_Up", "Victory", "ILoveYou"
+          let action = null;
+          
+          if (gestureName === "Open_Palm") action = "stop";
+          else if (gestureName === "Thumb_Up") action = "yes";
+          else if (gestureName === "Thumb_Down") action = "no";
+          else if (gestureName === "Pointing_Up") action = "repeat";
+          else if (gestureName === "Victory") action = "next";
+
+          if (action && (now - lastActionAt > 2000)) {
+             lastActionAt = now;
+             if (onGesture) onGesture(action);
+          }
+        }
+      }
+    } catch (err) {
+      if (onError) onError(err)
+    }
+
+    rafId = requestAnimationFrame(loop)
+  }
+
+  rafId = requestAnimationFrame(loop)
+
+  return {
+    stop() {
+      running = false
+      cancelAnimationFrame(rafId)
+      gestureRecognizer.close()
     }
   }
 }

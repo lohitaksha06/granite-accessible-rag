@@ -1,4 +1,8 @@
 import re
+import base64
+import io
+from PIL import Image
+from transformers import BlipProcessor, BlipForConditionalGeneration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -72,6 +76,7 @@ class AskRequest(BaseModel):
     disability: str = "blind"
     language: str = "english"
     visual_context: str = "None"
+    image_base64: str = None
 
 
 class AskResponse(BaseModel):
@@ -83,15 +88,45 @@ rag = RAGPipeline()
 rag.initialize()
 
 
+# Load a lightweight vision-language model for image processing
+vision_processor = None
+vision_model = None
+
+def get_image_description(image_base64: str) -> str:
+    global vision_processor, vision_model
+    try:
+        if not vision_processor:
+            vision_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+            vision_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+            
+        header, encoded = image_base64.split(",", 1) if "," in image_base64 else ("", image_base64)
+        image_data = base64.b64decode(encoded)
+        image = Image.open(io.BytesIO(image_data)).convert('RGB')
+        
+        inputs = vision_processor(image, return_tensors="pt")
+        out = vision_model.generate(**inputs, max_new_tokens=50)
+        return vision_processor.decode(out[0], skip_special_tokens=True)
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        return "An error occurred while analyzing the image."
+
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
+    # Process uploaded image if available
+    img_context = ""
+    if request.image_base64:
+        img_desc = get_image_description(request.image_base64)
+        img_context = f"[User uploaded an image. Image description: {img_desc}] "
+        
     # Check for conversational intents first (greetings, goodbyes, thanks)
     intent, friendly_response = detect_conversational_intent(request.query)
     if intent and friendly_response:
         return {"answer": friendly_response, "gesture": intent}
     
     # Normal RAG flow for actual questions
-    context_docs = rag.retrieve(request.query)
+    # Prepend image context to query for the RAG prompt
+    effective_query = f"{img_context}{request.query}"
+    context_docs = rag.retrieve(effective_query)
 
     disability_key = request.disability
     if disability_key == "none":
@@ -107,7 +142,7 @@ def ask(request: AskRequest):
 
     prompt = build_rag_prompt(
         context_docs,
-        request.query,
+        effective_query,
         disability=disability_instruction,
         language=language_instruction,
         visual_context=request.visual_context

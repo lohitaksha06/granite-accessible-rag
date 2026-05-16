@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Avatar from './Avatar'
 import CustomizePage from './CustomizePage'
 import StarBackground from './StarBackground'
-import { createHandWaveDetector } from './vision'
+import { createHandWaveDetector, createAdvancedGestureDetector } from './vision'
 import { DEFAULT_REACTION_SETTINGS, resolveInputReaction } from './reactionSignals'
 import './styles.css'
 
@@ -175,15 +175,81 @@ function ChatPage({ customization }) {
   const [cameraState, setCameraState] = useState('idle')
   const [cameraMessage, setCameraMessage] = useState('Camera is off. You can continue without it.')
 
+  // Voice and Multimodal States
+  const [isListening, setIsListening] = useState(false)
+  const [autoTts, setAutoTts] = useState(true)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imageBase64, setImageBase64] = useState('')
+
+  const recognitionRef = useRef(null)
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setQuery(prev => prev + (prev ? ' ' : '') + transcript);
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } else {
+        alert("Speech Recognition is not supported in your browser.");
+      }
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageBase64(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSelectedImage(null);
+      setImageBase64('');
+    }
+  };
+
+  const speakText = (text) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  };
+
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const detectorRef = useRef(null)
+  const gestureDetectorRef = useRef(null)
   const gestureResetRef = useRef(null)
 
   const stopVision = () => {
     if (detectorRef.current) {
       detectorRef.current.stop()
       detectorRef.current = null
+    }
+
+    if (gestureDetectorRef.current) {
+      gestureDetectorRef.current.stop()
+      gestureDetectorRef.current = null
     }
 
     if (streamRef.current) {
@@ -230,6 +296,35 @@ function ChatPage({ customization }) {
     }, 2500)
   }
 
+  const reactToAdvancedGesture = (action) => {
+    let message = "";
+    if (action === "stop") message = "You signed 'Stop'. Pausing interaction.";
+    if (action === "yes") message = "You signed 'Yes'. Confirming.";
+    if (action === "no") message = "You signed 'No'. Canceling.";
+    if (action === "repeat") message = "You signed 'Repeat'. Could you say that again?";
+    if (action === "next") message = "You signed 'Next'. Moving on.";
+
+    setGesture(action === 'stop' ? 'idle' : 'hello');
+    setMood('neutral');
+    setCurrentAction(`Gesture: ${action}`);
+    setCameraMessage(message);
+
+    if (gestureResetRef.current) {
+      clearTimeout(gestureResetRef.current)
+    }
+
+    // Auto-read camera message for the visually impaired
+    if (autoTts) {
+       speakText(message);
+    }
+
+    gestureResetRef.current = setTimeout(() => {
+      setGesture('idle')
+      setCurrentAction('Idle')
+      setCameraMessage('Camera is on. Show a gesture: open palm (stop), thumb up (yes), etc.')
+    }, 3000)
+  }
+
   const disableCamera = () => {
     stopVision()
     setCameraState('skipped')
@@ -274,9 +369,15 @@ function ChatPage({ customization }) {
         }
       })
 
+      gestureDetectorRef.current = await createAdvancedGestureDetector({
+        video: videoRef.current,
+        onGesture: reactToAdvancedGesture,
+        onError: () => {}
+      })
+
       setCameraState('active')
       setCurrentAction('Camera active')
-      setCameraMessage('Camera is on. Wave or draw a shape (circle/square/triangle).')
+      setCameraMessage('Camera is on. Wave, draw a shape, or use gestures (open palm, thumb up/down).')
     } catch (err) {
       stopVision()
 
@@ -369,13 +470,18 @@ function ChatPage({ customization }) {
       const resp = await fetch('/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim(), disability, language })
+        body: JSON.stringify({ query: query.trim(), disability, language, image_base64: imageBase64 || null })
       })
 
       if (!resp.ok) throw new Error('Request failed')
 
       const data = await resp.json()
-      setAnswer(String(data?.answer ?? ''))
+      const returnedAnswer = String(data?.answer ?? '');
+      setAnswer(returnedAnswer)
+      
+      if (autoTts) {
+        speakText(returnedAnswer);
+      }
       
       // Use gesture hint from backend (hello/goodbye/thanks/thumbsup)
       const backendGesture = data?.gesture || 'thumbsup'
@@ -610,18 +716,54 @@ function ChatPage({ customization }) {
           </div>
 
           <div className="query-section glass-card">
+            <div className="voice-toggles" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <label className="toggle-item">
+                <input
+                  type="checkbox"
+                  checked={autoTts}
+                  onChange={(e) => setAutoTts(e.target.checked)}
+                />
+                🔊 Auto-read answers aloud
+              </label>
+              <div className="multimodal-upload">
+                <label className="subtle-btn" style={{ cursor: 'pointer' }}>
+                  📷 Upload Image
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                {selectedImage && <span style={{ marginLeft: '10px', fontSize: '0.9em' }}>{selectedImage.name}</span>}
+              </div>
+            </div>
+
             <label htmlFor="query">How can I help you today?</label>
-            <textarea
-              id="query"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type your question here... (Questions trigger thinking, tone can change mood)"
-              rows={3}
-            />
+            <div className="query-input-row" style={{ display: 'flex', gap: '10px' }}>
+              <textarea
+                id="query"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Type your question here... (Questions trigger thinking, tone can change mood)"
+                rows={3}
+                style={{ flex: 1 }}
+              />
+              <button 
+                className={`mic-btn ${isListening ? 'listening' : ''}`}
+                onClick={toggleListening}
+                title="Speak your question"
+                style={{ background: isListening ? '#f44336' : 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '15px', cursor: 'pointer', fontSize: '1.5rem', alignSelf: 'center' }}
+              >
+                🎙️
+              </button>
+            </div>
+            
             <button 
               className="submit-btn" 
               onClick={askAssistant} 
               disabled={!canSubmit}
+              style={{ marginTop: '15px' }}
             >
               {loading ? '🔄 Processing...' : '💬 Ask Assistant'}
             </button>
